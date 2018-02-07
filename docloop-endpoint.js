@@ -2,7 +2,7 @@
 
 
 const	DocloopAdapter	=	require('./docloop-adapter.js'),
-		DocloopError		=	 require('./docloop-error-handling.js').DocloopError
+		DocloopError	=	require('./docloop-error-handling.js').DocloopError
 
 
 

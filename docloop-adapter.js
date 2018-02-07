@@ -4,8 +4,7 @@ var	EventEmitter 		= 	require('events'),
 	Promise				= 	require('bluebird'),
 	ObjectId 			= 	require('mongodb').ObjectID,
 	express 			= 	require('express'),
-	Target				=	require('./docloop-endpoint.js').Target,
-	Endpoint			=	require('./docloop-endpoint.js'),
+	DocloopEndpoint		=	require('./docloop-endpoint.js').DocloopEndpoint,
 	DocloopError		= 	require('./docloop-error-handling.js').DocloopError,
 	errorHandler		= 	require('./docloop-error-handling.js').errorHandler,
 	catchAsyncErrors	= 	require('./docloop-error-handling.js').catchAsyncErrors
@@ -25,19 +24,28 @@ var	EventEmitter 		= 	require('events'),
 
 /**
  * This Class and any Class that extends DocloopAdapter are supposed to be passed to DocloopCore.use().
+ * 
+ * All methods that start with an underscore '_' expect the actual session to be passed as argument and will 
+ * usually have a counterpart without the leading underscore that expects the adapter's session data as argument instead.
+ * 
  * TODO: more
+ * 
  * @memberof 	module:Docloop
  * @extends		EventEmitter
+ * 
+ * @alias		DocloopAdapter
+ * 
  * @param 		{DocloopCore} 		core 									An instance of the docloop core. 
  * @param		{Object}			config
  * @param		{String}			config.id								The id this adapter should be identified by (e.g. 'github').	
- * @param		{String}			[config.extraId]						TODO: This maybe useful if a custom adapter has fixed id, but is supposed to be instantiated twice.
- * @param		{String}			config.name								A pretty name for the Adapter, that can actually be used in a client.
+ * @param		{String}			[config.extraId]						This maybe useful if a custom adapter has a fixed id, but is supposed to be instantiated twice with different configs.
+ * @param		{String}			[config.name='DocloopAdapter']			A pretty name for the Adapter, that can actually be used in a client.
  * @param		{String}			config.type								Either 'source' or 'target'.
  * @param		{DocloopEndpoint}	[config.endPointClass=DocloopEndpoint]	Endpoint class or any class extending Endpoint.
  * @param		{boolean}			[config.extraEndpoints=false]			True iff there are valid endpoints that are not returned by .getEndpoints()
  * @param		{Object}			[config.endpointDefaultConfig = {}]		Configuration object with default values for endpoints. These values will be used if no other values are provided when a new enpoint is created.
  * @param		{boolean}			config.extraEndpoints					true iff there are valid endpoints that are not returned by .getEndpoints()
+ * 
  * @property 	{DocloopCore} 		core 
  * @property 	{String} 			id 
  * @property 	{String}			name 
@@ -62,19 +70,57 @@ class DocloopAdapter extends EventEmitter {
 
 	constructor(core, config){
 
-		if(!config)							throw new ReferenceError("docLoopAdapter.constructor() missing config")
-		if(typeof config.id != 'string')	throw new TypeError("docLoopAdapter.constructor() invalid or missing config.id; config.id must be a string, got: "+ (typeof config.id) )
+		if(core === undefined)				throw new ReferenceError("DocloopAdapter.constructor() missing core")				
+		if(core.constructor.name != 'DocloopCore')	
+											throw new TypeError("DocloopAdapter.constructor() core must be an instance of DocloopCore.")
+
+		if(!config)							throw new ReferenceError("DocloopAdapter.constructor() missing config")
+		
+		if(config.id === undefined)			throw new ReferenceError("DocloopAdapter.constructor() missin config.id")
+		if(typeof config.id != 'string')	throw new TypeError("DocloopAdapter.constructor() config.id must be a string, got: "+ (typeof config.id) )
+
+		if(config.extraId && typeof config.extraId != 'string')
+											throw new TypeError("DocloopAdapter.constructor() config.extraId must be a string")
+
+		if(config.name && typeof config.name != 'string')
+											throw new TypeError("DocloopAdapter.constructor() config.name must be a string")
+
+		if(config.type === undefined)		throw new ReferenceError("DocloopAdapter.constructor() missing config.type")
+		if(['source', 'target'].indexOf(config.type.toLowerCase()) == -1)	
+											throw new RangeError("DocloopAdapter.constructor()config.type must be either 'source' or 'target'; got "+config.type)
+
+		if(['source', 'target'].indexOf(config.type) == -1)
+											throw new RangeError("DocloopAdapter.constructor() type must be either 'source' or 'target', got: "+config.type)
+
+
+		if(config.extraEndpoints !== undefined && typeof config.extraEndpoints != 'boolean')
+											throw new TypeError("DocloopAdapter.constructor() config.extraEndpoints must be a boolean")
+
+
+		if(config.endpointDefaultConfig && typeof config.endpointDefaultConfig != 'object')
+											throw new TypeError("DocloopAdapter.constructor() config.endpointDefaultConfig must be an object")								
+
+		if(config.endpointClass === undefined)			
+											throw new ReferenceError("DocloopAdapter.constructor() missing config.endpointClass")
+
+		if(typeof config.endpointClass != 'function')
+											throw new TypeError("DocloopAdapter.constructor() config.endpointClass must be an instance of function; got: "+(typeof config.endpointClass))
+
+
 
 		super()
 
 		this.core 					= core
 		this.id						= config.id + (config.extraId ? '-' + config.extraId :'')
-		this.name					= config.name
-		this.type					= config.type
-		this.endpointClass			= config.endpointClass || Endpoint
+		this.name					= config.name || 'DocloopAdapter'
+		this.type					= config.type.toLowerCase()
+		this.endpointClass			= config.endpointClass || DocloopEndpoint
 		this.extraEndpoints 		= !!config.extraEndpoints
 		this.endpointDefaultConfig	= config.endpointDefaultConfig || {}
 		this.app					= express()
+
+
+		this.setMaxListeners(50)
 
 		this.ready = 	this.core.ready
 						.then( ()  => {
@@ -93,12 +139,12 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Extracts the data associated with this adapter in the provided session object. Modifying its values will modify the session.
-	 * @param  {Object}				session		Express session
+	 * @param  {Session}			session		Express session
 	 * @return {Object}							Adapter's session data
 	 */
 	_getSessionData(session){
-		if(!session) 								throw new ReferenceError("DocloopAdapter._getSessionData() missing session")
-		if(!session.constructor.name == "Session") 	throw new TypeError("DocloopAdapter._getSessionData() session must be instance of Session; got: "+session.constructor.name)
+		if(session === undefined)					throw new ReferenceError("DocloopAdapter._getSessionData() missing session")
+		if(session.constructor.name != "Session") 	throw new TypeError("DocloopAdapter._getSessionData() session must be instance of Session; got: "+session.constructor.name)
 
 		session.adapters 			= session.adapters 			|| {}
 		session.adapters[this.id]	= session.adapters[this.id]	|| {}
@@ -108,11 +154,13 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Clears the data associated with this adapter in the provided session object. Returns an empty object. Modifying its values will modify the session.
-	 * @param  {Object}				session		Express session
+	 * @param  {Session}				session		Express session
 	 * @return {Object}							Empty session data
 	 */
 	_clearSessionData(session){
-		if(!session) return null
+		if(session === undefined)					throw new ReferenceError("DocloopAdapter._getSessionData() missing session")
+		if(session.constructor.name != "Session") 	throw new TypeError("DocloopAdapter._getSessionData() session must be instance of Session; got: "+session.constructor.name)
+
 
 		session.adapters 			= session.adapters 			|| {}
 		session.adapters[this.id]	= {}
@@ -122,27 +170,31 @@ class DocloopAdapter extends EventEmitter {
 
 	//TODO: user logger?
 
+
+
+
+
 	/**
 	 * Calls .getEndpoints() with session data (see ...) and ignores errors. If any errors occur, an empty array will be returned.
-	 * @param  {Object}				session		Express session
+	 * @param  {Session}				session		Express session
 	 * @return {DocloopEndpoint[]}				
 	 */
 	async _getEndpoints(session){
-		return await this.getEndpoints(this._getSessionData(session)).catch( e => console.error(e) || [])
+		return await this.getEndpoints(this._getSessionData(session))
 	}
 
 	/**
 	 * Calls .getStoredEndpoints with session data (see ...) and ignores errors. If any errors occur, an empty array will be returned.
-	 * @param  {Object}				session		Express session
+	 * @param  {Session}				session		Express session
 	 * @return {DocloopEndpoint[]}
 	 */
 	async _getStoredEndpoints(session){
-		return await this.getStoredEndpoints(this._getSessionData(session)).catch( e => console.error(e) || [])
+		return await this.getStoredEndpoints(this._getSessionData(session))
 	}
 
 	/**
 	 * Calls .getAuthState() with session data (see ...).
-	 * @param  {Object}				session		Express session
+	 * @param  {Session}				session		Express session
 	 * @return {Object}
 	 */
 	async _getAuthState(session){
@@ -151,30 +203,43 @@ class DocloopAdapter extends EventEmitter {
 
 
 
-	/**
-	 * Collects adapter data for client use. 
-	 * @param  {Object}				session		Express session
-	 * @return {AdapterData}
-	 */
-	async _getData(session){
-		return Promise.props({
-			id:						this.id,
-			name:					this.name,
-			type:					this.type,
-			extraEndpoints:			this.extraEndpoints,
-			endpointDefaultConfig:	this.endpointDefaultConfig,
-			auth:					this._getAuthState(session)
-		})
-	}
+
 	/**
 	 * Data concerning an adapter meant for client use. 
 	 * @typedef 	{Object}			AdapterData
 	 * @property 	{String} 			id 						The adapter's id
 	 * @property 	{String}			name 					The adapter's name
+	 * @property 	{String}			type 					The adapter's type
 	 * @property 	{boolean} 			extraEndpoints			The adapter's .extraEndpoints value
 	 * @property	{Object}			endpointDefaultConfig	The adapter's .endpointDefaultConfig'value
 	 * @property 	{AuthState} 		auth					The adapters authorization state. (see ...)
 	 */
+
+
+
+
+	/**
+	 * Collects adapter data for client use. 
+	 * @param  {Session}				session		Express session
+	 * @return {AdapterData}
+	 */
+	async _getData(session){
+		if(session === undefined)					throw new ReferenceError("DocloopAdapter._getSessionData() missing session")
+		if(session.constructor.name != "Session") 	throw new TypeError("DocloopAdapter._getSessionData() session must be instance of Session; got: "+session.constructor.name)
+
+
+		return {
+			id:						this.id,
+			name:					this.name,
+			type:					this.type,
+			extraEndpoints:			this.extraEndpoints,
+			endpointDefaultConfig:	this.endpointDefaultConfig,
+			auth:					await this._getAuthState(session)
+		}
+	}
+
+
+
 
 
 	/**
@@ -185,6 +250,8 @@ class DocloopAdapter extends EventEmitter {
 
 		res.status(200).send(data)
 	}
+
+
 
 	/**
 	 * Express request handler. Sends privileged Enpoints to the client.
@@ -200,9 +267,9 @@ class DocloopAdapter extends EventEmitter {
 	 * Express request handler. Guesses Endpoint from request paramter and sends it to the client.
 	 */
 	async _handleGetGuessEndpointRequest(req,res){
-		var input	= req.params.str
+		var input	= req && req.params && req.params.str
 
-		if(!input) throw new DocloopError("Missing input", 400)
+		if(!input) throw new DocloopError("DocloopAdapter._handleGetGuessEndpointRequets() missing params.str", 400)
 
 		var endpoint = await this.endpointClass.guess(this, input, req.session)
 
@@ -212,14 +279,20 @@ class DocloopAdapter extends EventEmitter {
 
 	//TODO: check authorization (done):
 	//TODO: check if this is uses anywhere
+	//
+	//TOSDO: _getStoredEndpoints(id, session_data)
 
 	/**
-	 * Returns the endpoint with the provided id. Throws an error if it cannot be found or the session lacks privileges to acces it.
+	 * Returns the endpoint with the provided id. Throws an error if it cannot be found or the session lacks privileges to access it.
+	 * 
 	 * @async
+	 * 
 	 * @param  	{string | bson}				id			Mongo-db id
 	 * @param 	{Object} 					session 	Express session
+	 * 
 	 * @throws 	{DocloopError} 							If the endpoint cannot be found.
 	 * @throws 	{DocloopError} 							If the endpoint cannot be validated for the session.
+	 * 
 	 * @return 	{ValidEndpoint}
 	 */
 	async getStoredEndpoint(id, session){
@@ -232,7 +305,7 @@ class DocloopAdapter extends EventEmitter {
 
 		var endpoint = this.newEndpoint(endpoint_data)
 
-		await endpoint.validate(session)
+		await endpoint._validate(session)
 
 		return endpoint
 	}
@@ -265,7 +338,7 @@ class DocloopAdapter extends EventEmitter {
 	 * @abstract
 	 * @return {ValidEndpoint[]}
 	 */
-	async getStoredEndpoints(){
+	async getStoredEndpoints(session_data){
 		throw new DocloopError("DocloopAdapter.getStoredEndpoints not implemented for this adapter: "+this.id)
 	}
 
@@ -273,6 +346,7 @@ class DocloopAdapter extends EventEmitter {
 	/**
 	 * Authorization data for client use. A truthy user value indicated that the session user is logged in with a third party service.
 	 * @typedef 	{Object} 	AuthState
+	 * 
 	 * @property	{String} 	user?			The username, login or id of the service the adapter makes use of
 	 * @property 	{String} 	link?			Authorization Url. This is the url the client is supposed to open in order to login with the service this adapters want to make use of. Make sure to also add a route to the adapters sub app in order to catch the callback or webhook or wahever your service calls after the authorization.
 	 */

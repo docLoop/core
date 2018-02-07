@@ -32,14 +32,17 @@ class DocloopLink {
 		if(!core) 									throw new ReferenceError("Link.constructor() missing core")
 		if(core.constructor.name != 'DocloopCore') 	throw new TypeError("Link.constructor() expected core to be instance of DocloopCore got "+core)
 
-		this.core = core
+		if(!data) 				throw new ReferenceError("Link.constructor() missing data")
 
+		this.core 	= core
+		this.id 	= data.id || undefined
 
-		var id 		= 	undefined,
-			data	=	undefined
-
-		if(data) throw new ReferenceError("Link.constructor() missing data")
 		
+		if(!data.source)		throw new ReferenceError("Link.constructor() missing source")
+		if(!data.target)		throw new ReferenceError("Link.constructor() missing target")
+
+
+
 		this.importData(data)
 	}
 
@@ -48,8 +51,6 @@ class DocloopLink {
 	 */
 
 	importData({source, target}){
-		if(!source)				throw new ReferenceError("Link.importData() missing source")
-		if(!target)				throw new ReferenceError("Link.importData() missing target")
 
 		if(!source.identifier) 	throw new ReferenceError("Link.importData() missing source identifier")
 		if(!target.identifier) 	throw new ReferenceError("Link.importData() missing target identifier")

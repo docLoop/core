@@ -19,5 +19,16 @@
   "bugs": {
     "url": "https://github.com/docloop/base/issues"
   },
-  "homepage": "https://github.com/docloop/base#readme"
+  "scripts":{
+    "test": "mkdir testdb; mongod --dbpath=testdb --port 27777 --fork --logpath /dev/null && mocha || true",
+    "posttest": "mongod --dbpath=testdb --port 27777 --shutdown"
+  },
+  "homepage": "https://github.com/docloop/base#readme",
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "mongodb": "^3.0.1",
+    "connect-mongo": "^2.0.1",
+    "express": "^4.16.2",
+    "express-session": "^1.15.6"
+  }
 }
