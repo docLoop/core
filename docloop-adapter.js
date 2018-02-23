@@ -28,12 +28,11 @@ var	EventEmitter 		= 	require('events'),
  * All methods that start with an underscore '_' expect the actual session to be passed as argument and will 
  * usually have a counterpart without the leading underscore that expects the adapter's session data as argument instead.
  * 
- * TODO: more
+ * The preferred way for an adapter to communicate with the core system or other adapters is through events. See {@link module:docloop.DocloopCore#relayEvent}.
+ *
  * 
- * @memberof 	module:Docloop
+ * @memberof 	module:docloop
  * @extends		EventEmitter
- * 
- * @alias		DocloopAdapter
  * 
  * @param 		{DocloopCore} 		core 									An instance of the docloop core. 
  * @param		{Object}			config
@@ -60,7 +59,7 @@ class DocloopAdapter extends EventEmitter {
 
 
 	//Todo, put EventQueue config into adapter config
-	//TODO: Endpoint class into cinstructor
+	//TODO: Endpoint class into constructor
 
 	//TODO: DO not store decoration
 	//custom getDecoration function needed
@@ -139,7 +138,9 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Extracts the data associated with this adapter in the provided session object. Modifying its values will modify the session.
+	 * 
 	 * @param  {Session}			session		Express session
+	 * 
 	 * @return {Object}							Adapter's session data
 	 */
 	_getSessionData(session){
@@ -154,7 +155,9 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Clears the data associated with this adapter in the provided session object. Returns an empty object. Modifying its values will modify the session.
+	 * 
 	 * @param  {Session}				session		Express session
+	 * 
 	 * @return {Object}							Empty session data
 	 */
 	_clearSessionData(session){
@@ -173,19 +176,42 @@ class DocloopAdapter extends EventEmitter {
 
 
 
-
 	/**
-	 * Calls .getEndpoints() with session data (see ...) and ignores errors. If any errors occur, an empty array will be returned.
+	 * Calls .getEndpoints() with {@link sessionData}.
+	 *
+	 * @async
+	 * 
 	 * @param  {Session}				session		Express session
+	 * 
 	 * @return {DocloopEndpoint[]}				
 	 */
 	async _getEndpoints(session){
 		return await this.getEndpoints(this._getSessionData(session))
 	}
 
+
 	/**
-	 * Calls .getStoredEndpoints with session data (see ...) and ignores errors. If any errors occur, an empty array will be returned.
+	 * Calls .getEndpoint() with {@link sessionData}.
+	 *
+	 * @async
+	 * 
 	 * @param  {Session}				session		Express session
+	 * 
+	 * @return {DocloopEndpoint[]}				
+	 */
+	async _getStoredEndpoint(session){
+		return await this.getStoredEndpoint(this._getSessionData(session))
+	}
+
+
+
+	/**
+	 * Calls .getStoredEndpoints with {@link sessionData}.
+	 *
+	 * @async
+	 * 
+	 * @param  {Session}				session		Express session
+	 * 
 	 * @return {DocloopEndpoint[]}
 	 */
 	async _getStoredEndpoints(session){
@@ -193,12 +219,16 @@ class DocloopAdapter extends EventEmitter {
 	}
 
 	/**
-	 * Calls .getAuthState() with session data (see ...).
+	 * Calls .getAuthState() with {@link sessionData}.
+	 * 
+	 * @async
+	 * 
 	 * @param  {Session}				session		Express session
+	 * 
 	 * @return {Object}
 	 */
 	async _getAuthState(session){
-		return this.getAuthState(this._getSessionData(session))
+		return await this.getAuthState(this._getSessionData(session))
 	}
 
 
@@ -206,7 +236,10 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Data concerning an adapter meant for client use. 
+	 * 
 	 * @typedef 	{Object}			AdapterData
+	 * @memberof	module:docloop.DocloopAdapter
+	 * 
 	 * @property 	{String} 			id 						The adapter's id
 	 * @property 	{String}			name 					The adapter's name
 	 * @property 	{String}			type 					The adapter's type
@@ -220,7 +253,11 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Collects adapter data for client use. 
+	 * 
+	 * @async
+	 * 
 	 * @param  {Session}				session		Express session
+	 * 
 	 * @return {AdapterData}
 	 */
 	async _getData(session){
@@ -234,7 +271,7 @@ class DocloopAdapter extends EventEmitter {
 			type:					this.type,
 			extraEndpoints:			this.extraEndpoints,
 			endpointDefaultConfig:	this.endpointDefaultConfig,
-			auth:					await this._getAuthState(session)
+			auth:					await this._getAuthState(session).catch(() => ({ user:null, link:null }))
 		}
 	}
 
@@ -295,9 +332,9 @@ class DocloopAdapter extends EventEmitter {
 	 * 
 	 * @return 	{ValidEndpoint}
 	 */
-	async getStoredEndpoint(id, session){
+	async getStoredEndpoint(id, session_data){
 		if(!id) throw new ReferenceError("DocloopAdapter.getStoredEndpoint() missing id")
-		if(id._bsontype != 'ObjectId') id = ObjectId(id)
+		if(id._bsontype != 'ObjectID') id = ObjectId(id)
 
 		var endpoint_data = await this.endpoints.findOne({'_id': id})
 	
@@ -305,7 +342,7 @@ class DocloopAdapter extends EventEmitter {
 
 		var endpoint = this.newEndpoint(endpoint_data)
 
-		await endpoint._validate(session)
+		await endpoint.validate(session_data)
 
 		return endpoint
 	}
@@ -313,7 +350,9 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Creates a new instance of the endpoint class associated with this adapter. The new endpoint's adapter will be set to this adapter.
+	 * 
 	 * @param  {Object}				data		Data to instantiate the endpoint with.
+	 * 
 	 * @return {DocloopEndpoint}				Endpoint
 	 */
 	newEndpoint(data){
@@ -323,8 +362,11 @@ class DocloopAdapter extends EventEmitter {
 	/**
 	 * This method is meant to be overwritten by a custom adapter class. Returns valid endpoints the current session has privileged access to.
 	 * @async
+	 * 
 	 * @abstract
+	 * 
 	 * @param  {Object}					session_data	Data of the current session associated with this adapter 				
+	 * 
 	 * @return {ValidEndpoint[]}		
 	 */
 	async getEndpoints(session_data){
@@ -334,8 +376,11 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * This method is meant to be overwritten by a custom adapter class. Retuns all endpoints stored in the db, that are also valid for the current session.
+	 * 
 	 * @async
+	 * 
 	 * @abstract
+	 * 
 	 * @return {ValidEndpoint[]}
 	 */
 	async getStoredEndpoints(session_data){
@@ -347,25 +392,44 @@ class DocloopAdapter extends EventEmitter {
 	 * Authorization data for client use. A truthy user value indicated that the session user is logged in with a third party service.
 	 * @typedef 	{Object} 	AuthState
 	 * 
-	 * @property	{String} 	user?			The username, login or id of the service the adapter makes use of
-	 * @property 	{String} 	link?			Authorization Url. This is the url the client is supposed to open in order to login with the service this adapters want to make use of. Make sure to also add a route to the adapters sub app in order to catch the callback or webhook or wahever your service calls after the authorization.
+	 * @property	{String} 	[user=null]			The username, login or id of the service the adapter makes use of
+	 * @property 	{String} 	[link=null]			Authorization Url. This is the url the client is supposed to open in order to login with the service this adapters want to make use of. Make sure to also add a route to the adapters sub app in order to catch the callback or webhook or wahever your service calls after the authorization.
 	 */
 
 	
 	/**
 	 * This method is meant to be overwritten by a custom adapter class. Returns the authorization state for the adapter in the current session.
+	 * 
 	 * @async
+	 * 
 	 * @abstract
+	 * 
 	 * @param  {Object}					session_data	Data of the current session associated with this adapter 									
+	 * 
 	 * @return {AuthState}
 	 */
 	async getAuthState(session_data){
-		return {
-			url:	null,
-			user:	null
-		}
+		throw new DocloopError("DocloopAdapter.getAuthState not implemented for this adapter: "+this.id)
 	}
 
 }
 
 module.exports = DocloopAdapter
+
+
+
+
+
+/**
+ * Either {@link module:docloop.DocloopAdapter DocloopAdapter} or any Class extending it. 
+ * 
+ * @typedef {Class} AdapterClass
+ * @memberof	module:docloop.DocloopAdapter
+ */
+
+/**
+ * An instance of either {@link module:docloop.DocloopAdapter DocloopAdapter} or any Class extending it. 
+ * 
+ * @typedef {Object} Adapter
+ * @memberof	module:docloop.DocloopAdapter
+ */

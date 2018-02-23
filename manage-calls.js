@@ -5,7 +5,28 @@ const	Promise	= require('bluebird')
 
 module.exports = {
 
-
+	/**
+	 * Replaces a method of provided object with a proxy, that will chain consecutive calls: 
+	 * So the orginal method will be called right after all previous calls have been resolved or rejected.
+	 *
+	 * The proxy method will allways wrap the original method in a Promise. 
+	 * 
+	 * You can provide an array of method names to serialize multiple methods at once.
+	 *
+	 * This may help to prevent timing conflicts of multiple calls.
+	 *
+	 * The orginial mthod can be restored with obj.[method_name].restore().
+	 *
+	 * @memberof	module:docloop
+	 * 
+	 * @param  		{Object} 				obj         	Target object
+	 * @param  		{string | string[]} 	method_names	Name(s) of the method(s) whose calls should be serialized.
+	 *
+	 * @throws 		{TypeError} 							If one of the method names does not point to a function.
+	 * 
+	 * @return 		{}										undefined          
+	 * 	 	 
+	 */
 	serialize: function(obj, method_names){
 
 
@@ -13,9 +34,9 @@ module.exports = {
 			chain				= Promise.resolve()
 
 
+		if(!method_names.forEach) method_names = [method_names]
 
 		function chainRun(method_name, ...args){
-			console.log('chaining ', method_name)
 			if(!chain.isPending()) chain = Promise.resolve()
 
 			return chain = 	chain
@@ -25,7 +46,7 @@ module.exports = {
 
 		function restore(){
 			method_names.forEach( method_name => {
-				obj[method_name] = original_fn
+				obj[method_name] = original_methods[method_name]
 			})
 		}
 
@@ -41,52 +62,53 @@ module.exports = {
 	},
 
 
-	collate: function(obj, method_name, timeout){
+	/**
+	 * Replaces a method of provided object with a proxy, 
+	 * that will prevent multiple calls to the original method with the same arguments 
+	 * while waiting for a response.
+	 *
+	 * The proxy method will allways wrap the original method in a Promise. 
+	 * 
+	 * If a previous call with the same arguments is still pending the proxy will return the corresponding promise.
+	 * 
+	 * This may help to prevent multiple redudant API calls. 
+	 * (e.g. when you dont expect the result of an API call to change while it's pending)
+	 *
+	 * Two sets of arguments are considered equal if their JSON representaions are equal.
+	 *
+	 * The orginial method can be restored with obj[method_name].restore().
+	 * 
+	 * @memberof	module:docloop
+	 * 
+	 * @param  {Object}  obj					Target object
+	 * @param  {string}  method_name			Name of the method whose calls should be callated
+	 * @param  {Number}	[force_call_after=1000] After this time (in milliseconds) the proxy will call the original method, regardless of previous calls still pending.
+	 *
+	 * @throws {TypeError} 						If method_name does not point to a function.
+	 * 
+	 * @return {}								undefined				
+	 */
+	collate: function(obj, method_name, force_call_after = 1000){
 
 		if(typeof obj[method_name] != 'function') throw new TypeError("Not a method '"+method_name+ "' on "+obj.toString())
 
-		timeout = timeout || 1000
-
 		var original_fn		= obj[method_name],
-			
-			scheduled_runs 	= {},
-			last_requests	= {} 
-
-		function cleanUp(str){
-			if( !scheduled_runs[str].isPending() ){
-				delete scheduled_runs[str]
-				delete last_requests[str] //TODO: test if deleted!
-			}
-		}
+			scheduled_runs 	= {}
 
 		function requestRun(...args){
-			var now 	= 	Date.now(),
-				str		=  	JSON.stringify(args)
-
-			scheduled_runs[str] 	= scheduled_runs[str] 	|| Promise.resolve()
-			last_requests[str]		= last_requests[str] 	|| 0
+			var str		=  	JSON.stringify(args)
 
 
-			if( scheduled_runs[str].isPending() ){
-				console.log('pending', method_name)
-				return 	now - last_requests[str] <  timeout
-						?	scheduled_runs[str]
-						:	scheduled_runs[str]
-							.then( () => requestRun(...args) )	
-			
+			if(!scheduled_runs[str] || !scheduled_runs[str].isPending()){
+				scheduled_runs[str] = Promise.resolve( original_fn.apply(obj, args) )
+				setTimeout( () => scheduled_runs[str] = undefined, force_call_after)
 			}
-
-			last_requests[str] 	= 	now
-			scheduled_runs[str] = 	Promise.resolve()
-									.then( () => original_fn.apply(obj, args) )
-									.finally( () => cleanUp(str) )
 
 			return scheduled_runs[str]
 		}
 
 		function restore(){
 			obj[method_name] = original_fn
-			delete obj[method_name].restore
 		}
 
 		obj[method_name] 			= requestRun
@@ -96,36 +118,44 @@ module.exports = {
 
 
 
-	cache: function(obj, method_name, timeout){
+	/**
+	 * Replaces a method of provided object with a proxy, 
+	 * that will cache the return value of the original method for the givin period of time. 
+	 * If the proxy is called the original method will be called only if there is no cached value.
+	 *
+	 * The proxy method will allways wrap the original method in a Promise. 
+	 *  
+	 * This may help to prevent redundant API calls (e.g. if you know that the result of an API call will not change in the next 10 seconds)
+	 * 
+	 * Two calls with different arguments will be cached separately.
+	 * Two sets of arguments are considered equal if their JSON representaions are equal.
+	 *
+	 * The orginial method can be restored with obj[method_name].restore().
+	 *
+	 * @memberof	module:docloop
+	 * 
+	 * @param  {Object} obj         	Target object
+	 * @param  {String} method_name 	Name of the method whose calls should be cached.
+	 * @param  {Number} ttl=1000    	Time to live for the cache values in milliseconds.
+	 * 
+	 * @throws {TypeError} 				If method_name does not point to a function.
+	 * 
+	 * @return {}						undefined             	
+	 */
+	cache: function(obj, method_name, ttl = 1000){
 		if(typeof obj[method_name] != 'function') throw new TypeError("Not a method '"+method_name+ "' on "+obj.toString())
 
-		timeout = timeout || 1000
-
-		var original_fn		= obj[method_name],
-			
-			scheduled_runs 	= {},
-			last_requests	= {} 
-
-		function cleanUp(str){
-			if( !scheduled_runs[str].isPending() ){
-				delete scheduled_runs[str]
-				delete last_requests[str] //TODO: test if deleted!
-			}
-		}
+		var original_fn			= obj[method_name],
+			scheduled_runs 		= {}
 
 		function requestRun(...args){
-			var now 	= 	Date.now(),
-				str		=  	JSON.stringify(args)
 
-			scheduled_runs[str] 	= scheduled_runs[str] 	|| Promise.resolve()
-			last_requests[str]		= last_requests[str] 	|| 0
-
-
+			var str	= JSON.stringify(args)
 			
-			if(now - last_requests[str] <  timeout) return scheduled_runs[str]
-
-			last_requests[str] 	= 	now
-			scheduled_runs[str] = 	Promise.resolve( original_fn.apply(obj, args) )
+			if(!scheduled_runs[str]){
+				scheduled_runs[str] = Promise.resolve( original_fn.apply(obj, args) )
+				setTimeout( () => scheduled_runs[str] = undefined , ttl)
+			}
 
 			return scheduled_runs[str]
 		}

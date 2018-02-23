@@ -2,35 +2,28 @@
 
 /**
  * @event 		link-established
+ * @memberof	module:docloop.DocloopCore
  * @type		{LinkSkeleton}
  */
 
 /**
  * @event 		link-removed
+ * @memberof	module:docloop.DocloopCore
  * @type		{LinkSkeleton}
  */
 
 /**
  * @event 		link-updated
+ * @memberof	module:docloop.DocloopCore
  * @type		{LinkSkeleton}
  */
 
 
 /**
- * @typedef {Object} Collections
- * TODO: get own collections form daapter
+ * @typedef {Object} Collection
+ * TODO: get own collections from adapter (???)
  */
 
-
-/**
- * Either {@link DocLoopAdapter} or any Class extending it. 
- * @typedef {Class} AdapterClass
- */
-
-/**
- * An instance of either {@link DocLoopAdapter} or any Class extending it. 
- * @typedef {Object} Adapter
- */
 
 const 	EventEmitter 	= require('events'),
 		DocloopLink		= require('./docloop-link.js'),
@@ -51,16 +44,18 @@ const 	EventEmitter 	= require('events'),
 
 /**
  * The Docloop  core system. An instance of this class is used to setup the application and will also be passed to all adapters as core.
+ *
+ * All events emitted by the adapters will be enhanced and reemmited on the core. See {@link module:docloop.DocloopCore#relayEvent}.
  * 
- * @memberof	module:Docloop  
- * 
+ * @memberof	module:docloop  
+ *
  * @param  		{object} 				 config  
  * @param 		{string} 				[config.name = Docloop]		Readable name for frontend output or to distinguish different instances of docloop.
  * @param 		{number} 				 config.port				The port the app  will respond to.
  * @param 		{string} 				[config.home]				Project website
  * @param 		{string} 				[config.clientUrl = /]		The url of the client. Some adapters will need this to redirect the user back to the client after some extenal authentication.
  * @param 		{string} 				 config.sessionSecret:		Your session secret, used in express session config.
- * @param 		{object} 				 config.db					Databse configuration	
+ * @param 		{object} 				 config.db					Database configuration	
  * @param 		{string} 				 config.db.name				mongo-db name
  * @param 		{string} 				 config.db.port				mongo-db port
  * @param 		{string} 				[config.db.user]			mongo-db username
@@ -68,8 +63,8 @@ const 	EventEmitter 	= require('events'),
  * 
  * @property 	{ExpressApp} 			 app 						The express app
  * @property 	{Object} 				 adapters 					Hash map of all used adapters. Adapters' ids are used as keys.
- * @property 	{DocloopAdapter[]} 		 sourceAdapters 			Array of all used source adapters
- * @property 	{DocloopAdapter[]} 		 targetAdapters 			Array of all used target adapters
+ * @property 	{Adapter[]} 			 sourceAdapters 			Array of all used source adapters
+ * @property 	{Adapter[]} 			 targetAdapters 			Array of all used target adapters
  * @property	{Promise}				 dbPromise					mongoClient.connect promise
  * @property	{ready}					 ready						resolves when this instance is fully set up
  * @property 	{String[]} 				 preventRelayEventNames		Events that should not be relayed
@@ -81,6 +76,11 @@ const 	EventEmitter 	= require('events'),
  */
 
 class DocloopCore extends EventEmitter {
+
+
+
+
+
 
 	constructor(config){
 
@@ -271,7 +271,7 @@ class DocloopCore extends EventEmitter {
 	 * @param  	{DocloopAdapter} 				AdapterClass 	Any Class extending {@link DocloopAdapter}
 	 * @param  	{Object} 			config		The configuration object for th custim adapter class.
 	 * 
-	 * @return 	{this} 							for chaining
+	 * @return 	{} 								this for chaining
 	 *
 	 * @throws	{DocloopError|409}				If another adapter with the same id is already in use.
 	 * 
@@ -317,20 +317,9 @@ class DocloopCore extends EventEmitter {
 		return new DocloopLink(this, data)
 	}
 
-	/**
-	 * Get all source adapters.
-	 * 
-	 * @type {DocloopAdapter[]}
-	 */
 	get sourceAdapters(){
 		return Object.values(this.adapters).filter( adapter => adapter.type == 'source')
 	}
-
-	/**
-	 * Get all target adapters.
-	 * 
-	 * @type {DocloopAdapter[]}
-	 */
 
 	get targetAdapters(){
 		return Object.values(this.adapters).filter( adapter => adapter.type == 'target')
@@ -359,7 +348,7 @@ class DocloopCore extends EventEmitter {
 
 		if(!id) throw ReferenceError("docLoopCore.getStoredLink() missing id")
 
-		try 	{	if(id._bsontype != 'ObjectId') id = ObjectId(id) }
+		try 	{	if(id._bsontype != 'ObjectID') id = ObjectId(id) }
 		catch(e){	throw new TypeError("docLoopCore.getStoredLink() unable to convert id to ObjectId: "+e.message) }
 
 
@@ -426,7 +415,7 @@ class DocloopCore extends EventEmitter {
 
 
 	/**
-	 * Relay an event if it has a source property. 
+	 * Relays an event if it has a source property. 
 	 * For every Link with that source reemits the events on core replacing the source property with the link's target.
 	 * This way one adapter can emit an event and everyother (linked) adapter can listen to it on the core.
 	 * 
@@ -593,11 +582,12 @@ class DocloopCore extends EventEmitter {
 										}).toArray()
 
 		var links			= 	raw_links
-								.map( raw_link 	=> this.newLink({
-									id:			raw_link._id,
-									source : 	sources.filter( source => source.identifier.adapter == raw_link.source.adapter && source.id == raw_link.source.id )[0],
-									target : 	targets.filter( target => target.identifier.adapter == raw_link.target.adapter && target.id == raw_link.target.id )[0],
-								}))
+								.map( raw_link 	=> {
+									var source = sources.filter( source => source.identifier.adapter == raw_link.source.adapter && source.id == raw_link.source.id )[0],
+										target = targets.filter( target => target.identifier.adapter == raw_link.target.adapter && target.id == raw_link.target.id )[0]
+
+									return this.newLink({ id: raw_link._id, source, target })
+								})
 
 
 		await	Promise.map( 

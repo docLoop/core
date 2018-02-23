@@ -12,76 +12,94 @@ var 	ObjectId 		= 	require('mongodb').ObjectID,
 
 //TODO: Decor?
 
+
 /**
- * @memberof  	module:Docloop
- * @param		{DocloopCore}		core						The core system. Since Core is a Factory for Links, this param will usually be set automatically.
- * @param		{Object}			data
- * @param		{Object}			data.source
- * @param		{Identifier}		data.source.identifier		An {@link Identifier} pointing at an extrernal source.
- * @param		{Object}			data.target
- * @param		{Identifier}		data.target.identifier		An {@link Identifier} pointing at an extrernal target resource.
- * @poerty		{bson}				id
- * @property	{DocloopEndpoint}	source						An endpoint representing a source of annotations
- * @property	{DocloopEndpoint}	target						An endpoint representing a target resource for issues
+ * @memberof  	module:docloop
+ *
+ * @param		{DocloopCore}		 core						The core system. Since Core is a Factory for Links, this param will usually be set automatically.
+ * @param		{Object}			 data
+ * @param		{String|bson}		[data.id]					Link id.	
+ * @param		{String|bson}		[data._id]					If data.id is not present _id will be used. This is handy, if the data comes directly form te database.
+ * @param		{EndpointData}		 data.source				
+ * @param		{EndpointData}		 data.target
+ * 
+ * @property	{bson}				 id
+ * @property	{Endpoint}	 		source						An endpoint representing a source of annotations
+ * @property	{Endpoint}	 		target						An endpoint representing a target resource for issues
+ *
+ * @throws		{ReferenceError}								If core is missing .
+ * @throws		{TypeError}										If core is not an instance of DocloopCore.
+ * @throws		{ReferenceError}								If data is missing .
  */
 class DocloopLink {
 
 	constructor(core, data){
 
 
-		if(!core) 									throw new ReferenceError("Link.constructor() missing core")
-		if(core.constructor.name != 'DocloopCore') 	throw new TypeError("Link.constructor() expected core to be instance of DocloopCore got "+core)
+		if(core === undefined ) 					throw new ReferenceError("Link.constructor() missing core")
+		if(core === null || core.constructor.name != 'DocloopCore') 	
+													throw new TypeError("Link.constructor() expected core to be instance of DocloopCore got "+core)
 
 		if(!data) 				throw new ReferenceError("Link.constructor() missing data")
 
 		this.core 	= core
-		this.id 	= data.id || undefined
+		this.id 	= data.id || data._id || undefined
 
-		
-		if(!data.source)		throw new ReferenceError("Link.constructor() missing source")
-		if(!data.target)		throw new ReferenceError("Link.constructor() missing target")
-
-
+		if(this.id && (this.id._bsontype != 'ObjectID') ) this.id = ObjectId(this.id)
 
 		this.importData(data)
 	}
 
 	/**
-	 * TODO
+	 * Imports source and target data. Mainly used by the constructor.
+	 *
+	 * @param	{Object}			data
+	 * @param	{EndpointData}		source	Source endpoint data as used in the {@link DocloopEndpoint#constructor}
+	 * @param	{EndpointData}		source	Target endpoint data as used in the {@link DocloopEndpoint#constructor}
+	 *
+	 * returns {this}
 	 */
 
-	importData({source, target}){
+	importData({source, target} = {}){
 
-		if(!source.identifier) 	throw new ReferenceError("Link.importData() missing source identifier")
-		if(!target.identifier) 	throw new ReferenceError("Link.importData() missing target identifier")
+		if(source === undefined)			throw new ReferenceError("Link.constructor() missing source")
+		if(target === undefined)			throw new ReferenceError("Link.constructor() missing target")
 
+		if(source.identifier === undefined) throw new ReferenceError("Link.importData() missing source identifier")
+		if(target.identifier === undefined) throw new ReferenceError("Link.importData() missing target identifier")
 
 		var source_adapter	= this.core.adapters[source.identifier.adapter],
 		 	target_adapter	= this.core.adapters[target.identifier.adapter]
 
-		if(!source_adapter)		throw new Error("Link.importData() no matching source adapter found")
-		if(!target_adapter)		throw new Error("Link.importData() no matching target adapter found")
+		if(!source_adapter)					throw new DocloopError("Link.importData() no matching source adapter found")
+		if(!target_adapter)					throw new DocloopError("Link.importData() no matching target adapter found")
 
 
 		this.source	=	source_adapter.newEndpoint(source)
 		this.target	=	target_adapter.newEndpoint(target)
 
+		return this
 	}
 
+
 	/**
-	 * Extracts raw data from the link
+	 * Extracts raw data from the link.
+	 * 
 	 * @return {Object}
 	 */
 	get export(){
 		return {
-			id:		this.id,
 			source: this.source.export,
 			target:	this.target.export,
 		}
 	}
 
 	/**
-	 * @typedef 	{Object} 					DocloopLinkSkeleton
+	 * @typedef 	{Object} 					LinkSkeleton
+	 * @alias		LinkSkeleton
+	 * 
+	 * @memberof	module:docloop.DocloopLink
+	 * 
 	 * @property 	{bson}						id						Link id 
 	 * @property 	{EndpointSkeleton}			source					Source skeleton	
 	 * @property 	{EndpointSkeleton}			target					Target skeleton
@@ -102,8 +120,11 @@ class DocloopLink {
 
 	/**
 	 * Check if there already exists a link with the same source identifier and the same target identifier as the link at hand. If so throws and error.
+	 * 
 	 * @async
-	 * @return 	{this}			for chaining
+	 * 
+	 * @return 	{this}				for chaining
+	 * 
 	 * @throws	{DocloopError}		If duplicate exists
 	 */
 	async preventDuplicate(){
@@ -111,6 +132,8 @@ class DocloopLink {
 		var sources 		= 	await	this.source.adapter.endpoints.find({identifier: this.source.identifier}).toArray(),
 			targets 		= 	await	this.target.adapter.endpoints.find({identifier: this.target.identifier}).toArray()
 			
+
+
 		if(sources.length == 0) return this
 		if(targets.length == 0) return this
 
@@ -134,13 +157,12 @@ class DocloopLink {
 
 	/**
 	 * Stores the link to the database as new document. First it stores its source and target, then stores a new document using the data from {@link DocLLoopLink#.skeleton}
+	 * 
 	 * @async
+	 * 
 	 * @return {bson}	The mongo-db id for the inserted document.
 	 */
 	async store() {	
-
-		if(!this.source) throw new ReferenceError("Link.store() missing source")
-		if(!this.target) throw new ReferenceError("Link.store() missing target")
 
 		var [source_id, target_id] 	= 	await 	Promise.all([ 
 													this.source.store(), 
@@ -158,49 +180,50 @@ class DocloopLink {
 
 	/**
 	 * Updates source and target using {@link DocloopEndpoint#update}
+	 * 
 	 * @async
 	 */
 	async update(){
-		if(!this.source) throw new ReferenceError("Link.update() missing source")
-		if(!this.target) throw new ReferenceError("Link.update() missing target")	
-
 		await this.source.update()
 		await this.target.update()
 	}
 
 	/**
 	 * Removes the link from the database. First it removes source and target from the database, then the actual link document.
+	 * 
 	 * @async
+	 * 
 	 * @return {undefined}
+	 *
+	 * @throws	{ReferenceError}	If this.id is missing. This happens most likely if the link had not been stored.
 	 */
 	async remove() {
 
 		if(!this.id) throw new ReferenceError("Link.remove() missing id")
 
-		//TODO check if source and target exist
-
-		//TODO: also remove endpoints
-
 		await this.source.remove()
 		await this.target.remove()
 
-		var deletetion = await this.core.links.deleteOne({_id:  this.id})
+		var deletion = await this.core.links.deleteOne({_id:  this.id})
 
-		if(deletetion.result.n != 1) throw new Error("Link.remove() db failed to remove link")
+		if(!deletion || !deletion.result || deletion.result.n != 1) 
+			throw new DocloopError("Link.remove() db failed to remove link")
 
 	}
 
 	/**
 	 * Checks if the current session has acces to source and target with {@link Endpoint#_validate}
+	 * 
 	 * @param  {session}		Express session
+	 * 
 	 * @return {undefined}
 	 */
 	async _validate(session){
 		try{ 		await this.source._validate(session) }
-		catch(e){	throw new DocloopError("Link.validate() unable to validate source "+e, e.status)	}
+		catch(e){	throw new DocloopError("Link.validate() unable to validate source "+e, e && e.status)	}
 
 		try{ 		await this.target._validate(session) }
-		catch(e){	throw new DocloopError("Link.validate() unable to validate target "+e, e.status)	}
+		catch(e){	throw new DocloopError("Link.validate() unable to validate target "+e, e && e.status)	}
 	}
 
 }
