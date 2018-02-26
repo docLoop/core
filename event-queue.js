@@ -196,6 +196,8 @@ class QueuedEvent {
  * Every event added to the qeue will be wrapped into a {@link module:docloop.EventQueue~QueuedEvent QueuedEvent}. 
  * And that in turn will be emitted periodically as {@link module:docloop.EventQueue.event:-attempt -attempt event}
  * until it exceeds the maximal number of retries, is {@link module:docloop.EventQueue~QueuedEvent.abandon abandoned} for some other reason or is {@link module:docloop.EventQueue~QueuedEvent.checkOff checked off}. 
+ *
+ * @alias		EventQueue
  * 
  * @memberof 	module:docloop
  * 

@@ -30,7 +30,6 @@ var	EventEmitter 		= 	require('events'),
  * 
  * The preferred way for an adapter to communicate with the core system or other adapters is through events. See {@link module:docloop.DocloopCore#relayEvent}.
  *
- * 
  * @memberof 	module:docloop
  * @extends		EventEmitter
  * 
@@ -54,6 +53,7 @@ var	EventEmitter 		= 	require('events'),
  * @property 	{ExpressApp} 		app										Express sub app of core.app. All routes will be relative to '/adapters/'+this.id.
  * @propetty	{Promise}			ready									Promise that resolves when core and adapter are fully set up.
  * @property 	{Collection} 		endpoints								Mongo-db collection for stored endpoints.
+ * @property	{String}			[help]									Help text used by the client.
  */
 class DocloopAdapter extends EventEmitter {
 
@@ -116,8 +116,18 @@ class DocloopAdapter extends EventEmitter {
 		this.endpointClass			= config.endpointClass || DocloopEndpoint
 		this.extraEndpoints 		= !!config.extraEndpoints
 		this.endpointDefaultConfig	= config.endpointDefaultConfig || {}
-		this.app					= express()
+		this.help					= config.help
+		this.app 					= express()
 
+
+		
+		this.app.get('/', 					catchAsyncErrors(this._handleGetRequest.bind(this) ))
+
+		this.app.get('/endpoints',			catchAsyncErrors(this._handleGetEndpointsRequest.bind(this) ))
+
+		this.app.get('/guessEndpoint/:str',	catchAsyncErrors(this._handleGetGuessEndpointRequest.bind(this) ))
+
+		this.app.post('/signoff',			catchAsyncErrors(this._handlePostSignOff.bind(this) ))
 
 		this.setMaxListeners(50)
 
@@ -125,13 +135,8 @@ class DocloopAdapter extends EventEmitter {
 						.then( ()  => {
 							this.endpoints 	= this.core.db.collection(this.id+'_endpoints')
 
+							this.app.use(errorHandler)
 							this.core.app.use('/adapters/'+this.id, this.app)
-							
-							this.app.get('/', 					catchAsyncErrors(this._handleGetRequest.bind(this) ))
-
-							this.app.get('/endpoints',			catchAsyncErrors(this._handleGetEndpointsRequest.bind(this) ))
-
-							this.app.get('/guessEndpoint/:str',	catchAsyncErrors(this._handleGetGuessEndpointRequest.bind(this) ))
 						})
 
 	}
@@ -191,16 +196,17 @@ class DocloopAdapter extends EventEmitter {
 
 
 	/**
-	 * Calls .getEndpoint() with {@link sessionData}.
+	 * Calls .getStoredEndpoint() with {@link sessionData}.
 	 *
 	 * @async
+	 *
+	 * @param	{String|bson}			id
+	 * @param  	{Session}				session		Express session
 	 * 
-	 * @param  {Session}				session		Express session
-	 * 
-	 * @return {DocloopEndpoint[]}				
+	 * @return 	{ValidEndpoint}				
 	 */
-	async _getStoredEndpoint(session){
-		return await this.getStoredEndpoint(this._getSessionData(session))
+	async _getStoredEndpoint(id, session){
+		return await this.getStoredEndpoint(id, this._getSessionData(session))
 	}
 
 
@@ -271,7 +277,8 @@ class DocloopAdapter extends EventEmitter {
 			type:					this.type,
 			extraEndpoints:			this.extraEndpoints,
 			endpointDefaultConfig:	this.endpointDefaultConfig,
-			auth:					await this._getAuthState(session).catch(() => ({ user:null, link:null }))
+			auth:					await this._getAuthState(session).catch(() => ({ user:null, link:null })),
+			help:					this.help
 		}
 	}
 
@@ -313,26 +320,29 @@ class DocloopAdapter extends EventEmitter {
 		res.status(200).send(endpoint.export)
 	}
 
+	/** 
+	 * Express request handler. Clears current session data for this adapter.
+	 */
+	async _handlePostSignOff(req, res){
+		this._clearSessionData(req.session)
+		res.status(200).send(this.id+': session data cleared.')
+	}
 
-	//TODO: check authorization (done):
-	//TODO: check if this is uses anywhere
-	//
-	//TOSDO: _getStoredEndpoints(id, session_data)
 
 	/**
 	 * Returns the endpoint with the provided id. Throws an error if it cannot be found or the session lacks privileges to access it.
 	 * 
 	 * @async
 	 * 
-	 * @param  	{string | bson}				id			Mongo-db id
+	 * @param  	{String | bson}				id			Mongo-db id
 	 * @param 	{Object} 					session 	Express session
 	 * 
 	 * @throws 	{DocloopError} 							If the endpoint cannot be found.
 	 * @throws 	{DocloopError} 							If the endpoint cannot be validated for the session.
 	 * 
-	 * @return 	{ValidEndpoint}
+	 * @return 	{Endpoint}
 	 */
-	async getStoredEndpoint(id, session_data){
+	async getStoredEndpoint(id){
 		if(!id) throw new ReferenceError("DocloopAdapter.getStoredEndpoint() missing id")
 		if(id._bsontype != 'ObjectID') id = ObjectId(id)
 
@@ -341,8 +351,6 @@ class DocloopAdapter extends EventEmitter {
 		if(!endpoint_data) throw new DocloopError("DocloopAdapter.getStoredEndpoint() unable to find Endpoint", 404)
 
 		var endpoint = this.newEndpoint(endpoint_data)
-
-		await endpoint.validate(session_data)
 
 		return endpoint
 	}
@@ -432,4 +440,26 @@ module.exports = DocloopAdapter
  * 
  * @typedef {Object} Adapter
  * @memberof	module:docloop.DocloopAdapter
+ */
+
+
+
+/**
+ * TODO
+ * 
+ * @typedef Annotation
+ *
+ * @memberof	module:docloop.DocloopAdapter
+ * 
+ */
+
+
+/**
+ * TODO
+ * 
+ * @event annotation
+ *
+ * @memberof 	module:docloop.DocloopAdapter
+ *
+ * @type	{Annotation}
  */

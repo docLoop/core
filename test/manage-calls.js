@@ -10,9 +10,9 @@ var chai			=	require('chai'),
 	sinon			=	require('sinon'),
 	sinonChai 		= 	require("sinon-chai"),
 	manageCalls		= 	require('../manage-calls.js'),
-	serialize		=	manageCalls.serialize,
-	collate			=	manageCalls.collate,
-	cache			=	manageCalls.cache,
+	serializeCalls	=	manageCalls.serializeCalls,
+	collateCalls	=	manageCalls.collateCalls,
+	cacheCalls		=	manageCalls.cacheCalls,
 	Promise			= 	require('bluebird')
 
 chai.use(chaiAsPromised)
@@ -32,19 +32,19 @@ var	delay			= 	160,
 
 describe("manageCalls", function(){
 
-	describe('.serialize', function(){
+	describe('.serializeCalls', function(){
 
 		it('should throw an error if argument yields no function', function(){
-			should.Throw( () => serialize(testObj, 'x'), 					TypeError)
-			should.Throw( () => serialize(testObj, 'nonFunction'), 			TypeError)
+			should.Throw( () => serializeCalls(testObj, 'x'), 					TypeError)
+			should.Throw( () => serializeCalls(testObj, 'nonFunction'), 			TypeError)
 
-			should.Throw( () => serialize(testObj, ['x', 'nonFunction']),	TypeError)
+			should.Throw( () => serializeCalls(testObj, ['x', 'nonFunction']),	TypeError)
 		})
 
 
 
 		it('should replace the original method', function(){
-			serialize(testObj, 'testAsync')
+			serializeCalls(testObj, 'testAsync')
 			testObj.testAsync.should.not.equal(originalAsync)
 
 			testObj.testAsync.restore()
@@ -58,7 +58,7 @@ describe("manageCalls", function(){
 			var clock
 			
 			before(function(){
-				serialize(testObj, 'testAsync')
+				serializeCalls(testObj, 'testAsync')
 				clock = sinon.useFakeTimers()
 			})
 
@@ -99,16 +99,16 @@ describe("manageCalls", function(){
 	})
 
 
-	describe('.collate', function(){
+	describe('.collateCalls', function(){
 
 		it('should throw an error if argument yields no function', function(){
-			should.Throw( () => collate(testObj, 'x') )
-			should.Throw( () => collate(testObj, 'nonFunction') )
+			should.Throw( () => collateCalls(testObj, 'x') )
+			should.Throw( () => collateCalls(testObj, 'nonFunction') )
 		})
 
 
 		it('should replace the original method', function(){
-			collate(testObj, 'testAsync', timeout)
+			collateCalls(testObj, 'testAsync', timeout)
 			testObj.testAsync.should.not.equal(originalAsync)
 
 			testObj.testAsync.restore()
@@ -119,7 +119,7 @@ describe("manageCalls", function(){
 		describe('replacement method', function(){
 
 			beforeEach(function(){
-				collate(testObj, 'testAsync', timeout)
+				collateCalls(testObj, 'testAsync', timeout)
 				originalAsync.resetHistory()
 			})
 
@@ -139,7 +139,7 @@ describe("manageCalls", function(){
 			})
 
 
-			it('should collate multiple calls', function(){
+			it('should collateCalls multiple calls', function(){
 				var results = [] 
 
 				return 	Promise.all([
@@ -193,16 +193,16 @@ describe("manageCalls", function(){
 
 
 
-	describe('.cache', function(){
+	describe('.cacheCalls', function(){
 
 		it('should throw an error if argument yields no function', function(){
-			should.Throw( () => cache(testObj, 'x') )
-			should.Throw( () => cache(testObj, 'nonFunction') )
+			should.Throw( () => cacheCalls(testObj, 'x') )
+			should.Throw( () => cacheCalls(testObj, 'nonFunction') )
 		})
 
 
 		it('should replace the original method', function(){
-			cache(testObj, 'testAsync')
+			cacheCalls(testObj, 'testAsync')
 			testObj.testAsync.should.not.equal(originalAsync)
 
 			testObj.testAsync.restore()
@@ -214,7 +214,7 @@ describe("manageCalls", function(){
 
 
 			beforeEach(function(){
-				cache(testObj, 'testAsync', 200)
+				cacheCalls(testObj, 'testAsync', 200)
 				originalAsync.resetHistory()
 			})
 
@@ -225,7 +225,7 @@ describe("manageCalls", function(){
 			})
 
 
-			it("should cache multiple calls", function(){
+			it("should cacheCalls multiple calls", function(){
 				var results = [] 
 
 				return 	Promise.all([

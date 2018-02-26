@@ -27,7 +27,7 @@ module.exports = {
 	 * @return 		{}										undefined          
 	 * 	 	 
 	 */
-	serialize: function(obj, method_names){
+	serializeCalls: function(obj, method_names){
 
 
 		var original_methods 	= {},
@@ -88,7 +88,7 @@ module.exports = {
 	 * 
 	 * @return {}								undefined				
 	 */
-	collate: function(obj, method_name, force_call_after = 1000){
+	collateCalls: function(obj, method_name, force_call_after = 1000){
 
 		if(typeof obj[method_name] != 'function') throw new TypeError("Not a method '"+method_name+ "' on "+obj.toString())
 
@@ -142,7 +142,7 @@ module.exports = {
 	 * 
 	 * @return {}						undefined             	
 	 */
-	cache: function(obj, method_name, ttl = 1000){
+	cacheCalls: function(obj, method_name, ttl = 1000){
 		if(typeof obj[method_name] != 'function') throw new TypeError("Not a method '"+method_name+ "' on "+obj.toString())
 
 		var original_fn			= obj[method_name],

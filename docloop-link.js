@@ -89,6 +89,7 @@ class DocloopLink {
 	 */
 	get export(){
 		return {
+			id:		this.id,
 			source: this.source.export,
 			target:	this.target.export,
 		}
@@ -133,12 +134,13 @@ class DocloopLink {
 			targets 		= 	await	this.target.adapter.endpoints.find({identifier: this.target.identifier}).toArray()
 			
 
-
 		if(sources.length == 0) return this
 		if(targets.length == 0) return this
 
-		var source_queries	= 	sources.map( source => ({ "source.id" : this.skeleton.source.id, "source.adapter": this.skeleton.source.adapter}) ),
-			target_queries	= 	targets.map( target => ({ "target.id" : this.skeleton.target.id, "source.adapter": this.skeleton.target.adapter}) ),
+
+
+		var source_queries	= 	sources.map( source => ({ "source.id" : source._id, "source.adapter": source.identifier.adapter}) ),
+			target_queries	= 	targets.map( target => ({ "target.id" : target._id, "target.adapter": target.identifier.adapter}) ),
 			duplicates 		= 	await this.core.links.find({
 									"$and":[
 										 {"$or": source_queries },
@@ -220,10 +222,9 @@ class DocloopLink {
 	 */
 	async _validate(session){
 		try{ 		await this.source._validate(session) }
-		catch(e){	throw new DocloopError("Link.validate() unable to validate source "+e, e && e.status)	}
-
+		catch(e){	throw new DocloopError("Link._validate() unable to validate source "+e, e && e.status)	}
 		try{ 		await this.target._validate(session) }
-		catch(e){	throw new DocloopError("Link.validate() unable to validate target "+e, e && e.status)	}
+		catch(e){	throw new DocloopError("Link._validate() unable to validate target "+e, e && e.status)	}
 	}
 
 }

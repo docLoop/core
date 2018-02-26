@@ -12,6 +12,9 @@ var DocloopCore 			= 	require('./docloop-core.js'),
 /**
  * TODO: Description for tis module
  * @module docloop
+ * 
+ * @alias docloop
+ * 
  * @license GPL-3.0
  */
 

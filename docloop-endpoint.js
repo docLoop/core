@@ -286,7 +286,7 @@ class DocloopEndpoint {
 	 * 
 	 * @async
 	 * 
-	 * @param  {Object}		session
+	 * @param  {Session}		session
 	 * 
 	 * @return {undefined}
 	 */
@@ -310,14 +310,26 @@ class DocloopEndpoint {
 		throw new DocloopError("Endpoint.validate() not implemented for this adapter: "+this.adapter.id)
 	}
 
+
+	/**
+	 * Calls .updateDecor with {@link SessionData}.
+	 *
+	 * @param 	{Session} 		session 
+	 * @return 	{undefined}
+	 */
+	async _updateDecor(session){
+		await this.updateDecor(this.adapter._getSessionData(session))
+	}
+
 	//TODO: Is this really useful? Either store the decor or update on the fly, but both?
 
 	/**
 	 * This method is meant to be overwritten. //TODO: is this usefull?
-	 * 
-	 * @return {undefined}
+	 *
+	 * @param 	{SessionData} sesion_data 
+	 * @return 	{undefined}
 	 */
-	async updateDecor(){
+	async updateDecor(session_data){
 		throw new DocloopError("Endpoint.updateDecor() not implemented")
 	}
 

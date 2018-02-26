@@ -86,7 +86,7 @@ class DocloopCore extends EventEmitter {
 
 
 		var defaults =	{
-							name:		'Docloop',
+							name:		'docloop',
 							clientUrl:	'/'
 						}
 
@@ -145,34 +145,7 @@ class DocloopCore extends EventEmitter {
 							})
 
 
-		this.app		= 	express()
-
-		this.app.use(function(req, res, next) {
-			res.header('Access-Control-Allow-Credentials', 	true)
-			res.header('Access-Control-Allow-Origin', 		req.headers.origin)
-			res.header('Access-Control-Allow-Methods', 		'GET,PUT,POST,DELETE')
-			res.header('Access-Control-Allow-Headers', 		'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept')
-			next()		
-		})
-
-		//Routes
-
-
-		this.app.use(bodyParser.json())
-		this.app.use(express.static('public'))
-
-
-		this.app.get(	'/', 				catchAsyncErrors(this.handleGetRootRequest.bind(this)))
-		this.app.get(	'/links', 			catchAsyncErrors(this.handleGetLinksRequest.bind(this)))
-		this.app.get(	'/links/:id', 		catchAsyncErrors(this.handleGetLinkRequest.bind(this)))
-		this.app.post(	'/links', 			catchAsyncErrors(this.handlePostLinkRequest.bind(this)))
-		this.app.put(	'/links/:id', 		catchAsyncErrors(this.handlePutLinkRequest.bind(this)))
-		this.app.delete('/links/:id', 		catchAsyncErrors(this.handleDeleteLinkRequest.bind(this)))
-
-		this.app.get(	'/adapters', 		catchAsyncErrors(this.handleGetAdaptersRequest.bind(this)))
-		this.app.get(	'/dropSession', 	catchAsyncErrors(this.handleDropSessionRequest.bind(this)))
-
-		this.app.use(errorHandler)
+		
 
 
 		//Events
@@ -192,20 +165,56 @@ class DocloopCore extends EventEmitter {
 
 		this.ready	 = 	this.ready
 						.then( () => {
-								//Sessions
-								this.app.use(session({
-									name:				'docloop.sid',
-									secret:				config.sessionSecret,
-									store:				new MongoStore( { db: this.db} ),
-									resave:				false,
-									saveUninitialized: 	true,
-									cookie: 			{ 
-															path: 		'/', 
-															httpOnly: 	true,  //TODO!
-															secure: 	'auto', 
-															maxAge: 	null
-														}
-								}))
+
+							this.app		= 	express()
+
+							//Sessions								
+							this.app.use(session({
+								name:				'docloop.sid',
+								secret:				config.sessionSecret,
+								store:				new MongoStore( { db: this.db} ),
+								resave:				false,
+								saveUninitialized: 	true,
+								cookie: 			{ 
+														path: 		'/', 
+														httpOnly: 	true,  //TODO!
+														secure: 	'auto', 
+														maxAge: 	null
+													}
+							}))
+
+
+							this.app.use(function(req, res, next) {
+								res.header('Access-Control-Allow-Credentials', 	true)
+								res.header('Access-Control-Allow-Origin', 		req.headers.origin)
+								res.header('Access-Control-Allow-Methods', 		'GET,PUT,POST,DELETE')
+								res.header('Access-Control-Allow-Headers', 		'X-Requested-With, X-HTTP-Method-Override, Content-Type, Accept')
+								next()		
+							})
+
+							//Routes
+
+
+							this.app.use(bodyParser.json())
+							this.app.use(express.static('public'))
+
+
+							this.app.get(	'/', 				catchAsyncErrors(this.handleGetRootRequest.bind(this)))
+							this.app.get(	'/links', 			catchAsyncErrors(this.handleGetLinksRequest.bind(this)))
+							this.app.get(	'/links/:id', 		catchAsyncErrors(this.handleGetLinkRequest.bind(this)))
+							this.app.post(	'/links', 			catchAsyncErrors(this.handlePostLinkRequest.bind(this)))
+							this.app.put(	'/links/:id', 		catchAsyncErrors(this.handlePutLinkRequest.bind(this)))
+							this.app.delete('/links/:id', 		catchAsyncErrors(this.handleDeleteLinkRequest.bind(this)))
+
+							this.app.get(	'/adapters', 		catchAsyncErrors(this.handleGetAdaptersRequest.bind(this)))
+							this.app.get(	'/dropSession', 	catchAsyncErrors(this.handleDropSessionRequest.bind(this)))
+
+
+							//Errors:
+
+							this.app.use(errorHandler)
+
+
 						})
 						.catch( e => {
 
@@ -565,34 +574,29 @@ class DocloopCore extends EventEmitter {
 			targets			=	[].concat.apply([], await Promise.map(this.targetAdapters, adapter => adapter._getStoredEndpoints(req.session).catch( () => [] ) ) )
 
 
+		if(sources.length == 0 && targets.length == 0) return res.status(200).send([])
 
-		if(sources.length == 0) return res.status(200).send([])
-		if(targets.length == 0) return res.status(200).send([])
 
 
 		var	source_queries 	= 	sources.map( source => ({'source.id' : source.id, 'source.adapter': source.identifier.adapter}) ),
-			target_queries 	= 	targets.map( target => ({'target.id' : target.id, 'target.adapter': target.identifier.adapter}) )
+			target_queries 	= 	targets.map( target => ({'target.id' : target.id, 'target.adapter': target.identifier.adapter}) ),
+			raw_links		=	await	this.links.find({
+											$or: [].concat(source_queries, target_queries)
+										}).toArray(),
+			links			= 	await 	Promise.map(
+											raw_links,
+											async raw_link 	=> {
+												var source = await this.adapters[raw_link.source.adapter]._getStoredEndpoint(raw_link.source.id, req.session),
+													target = await this.adapters[raw_link.target.adapter]._getStoredEndpoint(raw_link.target.id, req.session)
 
-
-		var	raw_links		=	await	this.links.find({
-											"$and": [
-												{ "$or": source_queries },
-												{ "$or": target_queries }
-											]
-										}).toArray()
-
-		var links			= 	raw_links
-								.map( raw_link 	=> {
-									var source = sources.filter( source => source.identifier.adapter == raw_link.source.adapter && source.id == raw_link.source.id )[0],
-										target = targets.filter( target => target.identifier.adapter == raw_link.target.adapter && target.id == raw_link.target.id )[0]
-
-									return this.newLink({ id: raw_link._id, source, target })
-								})
-
+												return 	this.newLink({ id: raw_link._id, source, target })
+											}
+										)
+		links =	links.filter( link => !!link )
 
 		await	Promise.map( 
 					links,
-					link	=> Promise.join(link.source.updateDecor(req.session), link.target.updateDecor(req.session)) 
+					link	=> Promise.join(link.source._updateDecor(req.session), link.target._updateDecor(req.session)) 
 				)						
 
 				
@@ -673,6 +677,8 @@ class DocloopCore extends EventEmitter {
 		var link = await this.newLink({source, target})
 
 		await link._validate(req.session)
+
+
 		await link.preventDuplicate()
 		await link.store()
 

@@ -59,6 +59,7 @@ function catchAsyncErrors(fn) {
 function errorHandler(err, req, res, next){
 
 	console.log('# Docloop error handler:')
+	console.error(err)
 
 	if(err instanceof DocloopError) return res.status(err.status).send(err.toString())
 

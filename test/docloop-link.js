@@ -173,6 +173,7 @@ describe('DocloopLink', function(){
 
 		it("should return raw data", function(){
 
+			docloopLink.export.id.toString().should.equal(id)
 			docloopLink.export.source.should.deep.equal(docloopLink.source.export)
 			docloopLink.export.target.should.deep.equal(docloopLink.target.export)
 
