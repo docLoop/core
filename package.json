@@ -4,11 +4,12 @@
   "description": "Service to convert annotations on one platform into issue on another.",
   "main": "docloop.js",
   "scripts": {
-    "test": "mocha"
+    "test": "mkdir testdb; mongod --dbpath=testdb --port 27777 --fork --logpath /dev/null && mocha || true",
+    "posttest": "mongod --dbpath=testdb --port 27777 --shutdown"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/docloop/base.git"
+    "url": "git+https://github.com/docloop/core.git"
   },
   "keywords": [
     "issue",
@@ -17,13 +18,9 @@
   "author": "Andreas Pittrich",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/docloop/base/issues"
+    "url": "https://github.com/docloop/core/issues"
   },
-  "scripts":{
-    "test": "mkdir testdb; mongod --dbpath=testdb --port 27777 --fork --logpath /dev/null && mocha || true",
-    "posttest": "mongod --dbpath=testdb --port 27777 --shutdown"
-  },
-  "homepage": "https://github.com/docloop/base#readme",
+  "homepage": "https://github.com/docloop/core#readme",
   "dependencies": {
     "bluebird": "^3.5.1",
     "mongodb": "^3.0.1",
