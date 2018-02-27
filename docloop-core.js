@@ -49,24 +49,24 @@ const 	EventEmitter 	= require('events'),
  * 
  * @memberof	module:docloop  
  *
- * @param  		{object} 				 config  
- * @param 		{string} 				[config.name = Docloop]		Readable name for frontend output or to distinguish different instances of docloop.
- * @param 		{number} 				 config.port				The port the app  will respond to.
- * @param 		{string} 				[config.home]				Project website
- * @param 		{string} 				[config.clientUrl = /]		The url of the client. Some adapters will need this to redirect the user back to the client after some extenal authentication.
- * @param 		{string} 				 config.sessionSecret:		Your session secret, used in express session config.
- * @param 		{object} 				 config.db					Database configuration	
- * @param 		{string} 				 config.db.name				mongo-db name
- * @param 		{string} 				 config.db.port				mongo-db port
- * @param 		{string} 				[config.db.user]			mongo-db username
- * @param 		{string} 				[config.db.pass]			mongo-db password
+ * @param  		{Object} 				 config  
+ * @param 		{String} 				[config.name = Docloop]		Readable name for frontend output or to distinguish different instances of docloop.
+ * @param 		{Number} 				 config.port				The port the app  will respond to.
+ * @param 		{String} 				[config.home]				Project website
+ * @param 		{String} 				[config.clientUrl = /]		The url of the client. Some adapters will need this to redirect the user back to the client after some extenal authentication.
+ * @param 		{String} 				 config.sessionSecret:		Your session secret, used in express session config.
+ * @param 		{Object} 				 config.db					Database configuration	
+ * @param 		{String} 				 config.db.address			mongo-db address
+ * @param 		{String} 				 config.db.name				mongo-db name
+ * @param 		{String} 				 config.db.port				mongo-db port
+ * @param 		{String} 				[config.db.user]			mongo-db username
+ * @param 		{String} 				[config.db.pass]			mongo-db password
  * 
  * @property 	{ExpressApp} 			 app 						The express app
  * @property 	{Object} 				 adapters 					Hash map of all used adapters. Adapters' ids are used as keys.
  * @property 	{Adapter[]} 			 sourceAdapters 			Array of all used source adapters
  * @property 	{Adapter[]} 			 targetAdapters 			Array of all used target adapters
- * @property	{Promise}				 dbPromise					mongoClient.connect promise
- * @property	{ready}					 ready						resolves when this instance is fully set up
+ * @property	{Promise}				 ready						Resolves when this instance is fully set up
  * @property 	{String[]} 				 preventRelayEventNames		Events that should not be relayed
  * 
  * @emits		link-established
@@ -131,7 +131,7 @@ class DocloopCore extends EventEmitter {
 						+ (this.config.db.user && this.config.db.pass ? ':' : '') 
 						+ (this.config.db.pass || '')
 						+ (this.config.db.user && '@' || '')
-						+ (this.config.db.address)
+						+ (this.config.db.address | "127.0.0.1")
 						+ (':')
 						+ (this.config.db.port)
 						+ ('/')
