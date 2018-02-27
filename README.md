@@ -13,7 +13,7 @@ With these two adapters in charge, docloop converts comments and replies of Pape
 
 Check the example app at https://app.docloop.net
 
-The core module and the two adapters are documented here: [documenation](https://docloop.github.io/docs)
+The core module and the two adapters are documented here: [docloopDocs](https://docloop.github.io/docs)
 
 ## Requirements
 
