@@ -31,35 +31,35 @@ First of all get the core module:
 Setup up a MongoDB and use its credentials in the following minimal example:
 
 ```javascript
-var docloop 			=	require("docloop"),
-	DocloopCore 		=	docloop.DocloopCore,
-	DocloopAdapter	=	docloop.DocloopAdapter,
-	DocloopEndpoint	=	docloop.DocloopEndpoint
+var docloop         = require("docloop"),
+    DocloopCore     = docloop.DocloopCore,
+    DocloopAdapter  = docloop.DocloopAdapter,
+    DocloopEndpoint = docloop.DocloopEndpoint
 
-var docloopCore = new	DocloopCore({
-										port:			7777,
-										sessionSecret:	'abc',
-										db:{
-											name:		"your_db_name",
-											port:		27010, 			//or wherever your db is running
-											user:		"your_db_user",	//if authentication is required
-											pass:		"your_db_pass",	//if authentication is required
-											address:	"127.0.0.1" 	//or wherever your db is running
-										}
-									})
+var docloopCore     = new DocloopCore({
+                        port:     7777,
+                        sessionSecret:  'abc',
+                        db:{
+                          name:     "your_db_name",
+                          port:     27010,          //or wherever your db is running
+                          user:     "your_db_user", //if authentication is required
+                          pass:     "your_db_pass", //if authentication is required
+                          address:  "127.0.0.1"     //or wherever your db is running
+                        }
+                      })
 
 docloopCore
 .use(DocloopAdapter,{
-	id:				'custom-source-adapter',
-	type:			'source',
-	endpointClass:	DocloopEndpoint,
+  id:       'custom-source-adapter',
+  type:     'source',
+  endpointClass:  DocloopEndpoint,
 })
 .use(DocloopAdapter,{
-	id:				'custom-target-adapter',
-	type:			'target',
-	endpointClass:	DocloopEndpoint,
+  id:       'custom-target-adapter',
+  type:     'target',
+  endpointClass:  DocloopEndpoint,
 })
-	.run()
+.run()
 ```
 
 With this docloop is running on localhost:7777. Communication is setup via http requests.
