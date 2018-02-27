@@ -74,5 +74,5 @@ In Order have the example do anything useful you might want to install the above
 
 Using the paperhive-adapter is straight forward. The github-adapter however requires you to setup a [GithubApp](https://developer.github.com/apps/) beforehand.
 
-Check the [documenation](https://https://docloop.github.io/docs) for configuration options of the two adapters.
+Check the [documenation](https://docloop.github.io/docs) for configuration options of the two adapters.
 
