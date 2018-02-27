@@ -30,6 +30,9 @@ var	EventEmitter 		= 	require('events'),
  * 
  * The preferred way for an adapter to communicate with the core system or other adapters is through events. See {@link module:docloop.DocloopCore#relayEvent}.
  *
+ * Tutorial: {@tutorial custom_adapters}
+ *
+ * 
  * @memberof 	module:docloop
  * @extends		EventEmitter
  * 
@@ -288,6 +291,11 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Express request handler. Sends AdapterData to the client.
+	 *
+	 * @route	{GET}	/adapters/:adapter-id
+	 *
+	 * @param	{Object}	req			Express request object
+	 * @param	{Object}	res			Express result object
 	 */
 	async _handleGetRequest(req, res){
 		var data = await this._getData(req.session)
@@ -299,6 +307,11 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Express request handler. Sends privileged Enpoints to the client.
+	 *
+	 * @route	{GET}	/adapters/:adapter-id/endpoints
+	 *
+	 * @param	{Object}	req			Express request object
+	 * @param	{Object}	res			Express result object
 	 */
 	async _handleGetEndpointsRequest(req, res){
 		var endpoints = await this._getEndpoints(req.session)
@@ -309,6 +322,13 @@ class DocloopAdapter extends EventEmitter {
 
 	/**
 	 * Express request handler. Guesses Endpoint from request paramter and sends it to the client.
+	 *
+	 * @route	{GET}	/adapters/:adapter-id/guessEndpoint/:str
+	 *
+	 * @param	{Object}	req				Express request object
+	 * @param	{Object}	req.params		Request parameters
+	 * @param	{String}	req.params.str	String to guess the endpoint from
+	 * @param	{Object}	res				Express result object
 	 */
 	async _handleGetGuessEndpointRequest(req,res){
 		var input	= req && req.params && req.params.str
@@ -322,6 +342,8 @@ class DocloopAdapter extends EventEmitter {
 
 	/** 
 	 * Express request handler. Clears current session data for this adapter.
+	 *
+	 * @route	{GET}	/adapters/:adapter-id/signoff
 	 */
 	async _handlePostSignOff(req, res){
 		this._clearSessionData(req.session)

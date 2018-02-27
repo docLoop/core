@@ -62,19 +62,19 @@ docloopCore
 .run()
 ```
 
-With this docloop is running on localhost:7777. Communication is works via http requests.
+With this docloop is running on localhost:7777. Communication works via http requests.
 
 To actually see something you should get the client: [docloopClient](https://github.com/docloop/client)
 
 Clone the repository and serve the SRC-directory (will improve on that in the future). Set the backendUrl in app.js or config.js to 
 localhost:7777 and the app should work with the exmaple code above.
 
-Alas, the example code doesnt do much. The DocloopAdapter is only the base class for custom adapters. It doesnt do really do anything on its own.
-In Order have the example do anything useful you might want to install the above mentioned adpaters or write your own adapter class.
+Alas, the example code doesn't do much. The DocloopAdapter is only a generic base class for custom adapters. It doesn't really do anything on its own.
+In Order to have the example do something useful you might want to install the above mentioned adpaters or write your own adapter class.
 
 Using the paperhive-adapter is straight forward. The github-adapter however requires you to setup a [GithubApp](https://developer.github.com/apps/) beforehand.
 
 The [example app](https://app.docloop.net) uses the code from [docloopBackend](https://github.com/docloop/backend).
 
-Check the [documenation](https://docloop.github.io/docs) for configuration options of the two adapters.
+Check the [documenation](https://docloop.github.io/docs) for configuration options of the two adapters. There's also a tutorial for a more complex example with custom adapters.
 

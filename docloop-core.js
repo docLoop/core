@@ -49,6 +49,8 @@ const 	EventEmitter 	= require('events'),
  * 
  * @memberof	module:docloop  
  *
+ * @alias		DocloopCore
+ * 
  * @param  		{Object} 				 config  
  * @param 		{String} 				[config.name = Docloop]		Readable name for frontend output or to distinguish different instances of docloop.
  * @param 		{Number} 				 config.port				The port the app  will respond to.
@@ -201,8 +203,19 @@ class DocloopCore extends EventEmitter {
 
 							this.app.get(	'/', 				catchAsyncErrors(this.handleGetRootRequest.bind(this)))
 							this.app.get(	'/links', 			catchAsyncErrors(this.handleGetLinksRequest.bind(this)))
-							this.app.get(	'/links/:id', 		catchAsyncErrors(this.handleGetLinkRequest.bind(this)))
 							this.app.post(	'/links', 			catchAsyncErrors(this.handlePostLinkRequest.bind(this)))
+
+							/**
+							 * Calls {@link DocloopCore#handleGetLinkRequest}.
+							 * 
+							 * @name  		getSingleLink 
+							 * @memberof	DocloopCore
+							 * @route 		{GET} 		/links/:id
+							 * @routeparam	{String}	id			Link id
+							 */
+							this.app.get(	'/links/:id', 		catchAsyncErrors(this.handleGetLinkRequest.bind(this)))
+
+
 							this.app.put(	'/links/:id', 		catchAsyncErrors(this.handlePutLinkRequest.bind(this)))
 							this.app.delete('/links/:id', 		catchAsyncErrors(this.handleDeleteLinkRequest.bind(this)))
 
@@ -339,7 +352,7 @@ class DocloopCore extends EventEmitter {
 
 
 	/**
-	 *Get a strored link.
+	 * Get a strored link.
 	 * 
 	 * @param  	{string|bson}		mongo-db id 
 	 * 
@@ -402,7 +415,8 @@ class DocloopCore extends EventEmitter {
 	 * @private
 	 * 
 	 * @param  	{Adapter}
-	 * @return 	{undefined}
+	 * 
+	 * @return 	undefined
 	 *
 	 * @listens	newListener
 	 */
@@ -429,9 +443,11 @@ class DocloopCore extends EventEmitter {
 	 * This way one adapter can emit an event and everyother (linked) adapter can listen to it on the core.
 	 * 
 	 * @async
+	 * 
 	 * @param  {String}				event_name		The event name
 	 * @param  {data}				data			Event data
-	 * @return {undefined}
+	 * 
+	 * @return undefined
 	 *
 	 * @throws	{ReferenceError}					If either source.id or source.adapter is missing.
 	 */
@@ -473,7 +489,8 @@ class DocloopCore extends EventEmitter {
 	/**
 	 * Express request handler. Returns basic app information.
 	 *
-	 *
+	 * @route	{GET}	/
+	 * 
 	 * @async
 	 * 
 	 * @param  	{Object}		req		Express request object
@@ -497,12 +514,14 @@ class DocloopCore extends EventEmitter {
 	/**
 	 * Express request handler. Destroys the current session.
 	 *
+	 * @route	{GET}		/dropsession
+	 * 
 	 * @async
 	 * 
-	 * @param  {Object}		req		Express request object
-	 * @param  {Object}		res		Express result object
+	 * @param  	{Object}		req		Express request object
+	 * @param  	{Object}		res		Express result object
 	 * 
-	 * @return {undefined}
+	 * @return undefined
 	 */
 	async handleDropSessionRequest(req, res){
 		req.session.destroy( err => {
@@ -516,12 +535,14 @@ class DocloopCore extends EventEmitter {
 	/**
 	 * Express request handler. Get data for all adapters.
 	 *
+	 * @route	{GET}	/adapters
+	 * 
 	 * @async
 	 * 
-	 * @param  {Object}		req		Express request object
-	 * @param  {Object}		res		Express result object
+	 * @param  	{Object}		req		Express request object
+	 * @param  	{Object}		res		Express result object
 	 * 
-	 * @return {undefined}
+	 * @return undefined
 	 */
 	async handleGetAdaptersRequest(req, res){
 		var	adapters_array 	= 		Object.keys(this.adapters).map( id => this.adapters[id] ),
@@ -538,12 +559,16 @@ class DocloopCore extends EventEmitter {
 	/**
 	 * Express request handler. Get data of a single link.
 	 *
+	 * @route {GET} /links/:id
+	 * 
 	 * @async
 	 * 
-	 * @param  {Object}		req		Express request object
-	 * @param  {Object}		res		Express result object
+	 * @param  {Object}		req				Express request object
+	 * @param  {Object}		req.param		Request paramters
+	 * @param  {Object}		req.param.id	Link id
+	 * @param  {Object}		res				Express result object
 	 * 
-	 * @return {undefined}
+	 * @return undefined
 	 */
 	async handleGetLinkRequest(req, res){
 		if(!req || !req.params || !req.params.id) throw new DocloopError("docLoopCore.handleGetLinkRequest() missing res.params.id", 400)
@@ -561,12 +586,14 @@ class DocloopCore extends EventEmitter {
 	/**
 	 * Express request handler. Gets data of all link accessible by the current session.
 	 *
+	 * @route	{GET}	/links		
+	 * 
 	 * @async
 	 * 
-	 * @param  {Object}		req		Express request object
-	 * @param  {Object}		res		Express result object
+	 * @param  	{Object}		req		Express request object
+	 * @param  	{Object}		res		Express result object
 	 * 
-	 * @return {undefined}
+	 * @return undefined
 	 */
 	async handleGetLinksRequest(req, res){
 
@@ -610,12 +637,16 @@ class DocloopCore extends EventEmitter {
 	/**
 	 * Express request handler. Removes a link.
 	 *
+	 * @route	{DELETE}	/link/:id
+	 * 
 	 * @async
 	 * 
-	 * @param  {Object}		req		Express request object
-	 * @param  {Object}		res		Express result object
-	 * 
-	 * @return {undefined}
+	 * @param  	{Object}	req				Express request object
+	 * @param  	{Object}	req.params		Request paramteres
+	 * @param  	{Object}	req.params.id	Link id
+	 * @param  	{Object}	res				Express result object
+	 *                          
+	 * @returns undefined
 	 */
 	async handleDeleteLinkRequest(req, res){
 
@@ -637,18 +668,17 @@ class DocloopCore extends EventEmitter {
 	/**
 	 * Express request handler. Creates a new link out of posted source and target, validates and stores the link.
 	 *
+	 * @route 		{POST} 		/links
+	 * 
 	 * @async
 	 * 
-	 * @param  		{Object} 			 req						Express request object
-	 * @param  		{Object} 			 req.source				
-	 * @param  		{Identifier}		 req.source.identifier		Source identifier
-	 * @param  		{Object} 			[req.source.config]		
-	 * @param  		{Object} 			 req.target				
-	 * @param  		{Identifier}		 req.target.identifier		Target identifier
-	 * @param  		{Object} 			[req.target.config]		
-	 * @param  		{Object} 			 res						Express result object
+	 * @param  		{Object} 			req						Express request object
+	 * @param  		{Object} 			req.body				Request body
+	 * @param		{EndpointData}		req.body.source			Source Data					
+	 * @param		{EndpointData}		req.body.target			Target Data
+	 * @param  		{Object} 			res						Express result object
 	 * 
-	 * @return 		{undefined}
+	 * @return 		undefined
 	 * 
  	 * @emits		link-established
  	 * 
@@ -692,17 +722,21 @@ class DocloopCore extends EventEmitter {
 	//This should be updateConfig!
 
 	/**
-	 * Express request handler. Updates an existing link. (TODO: restrict to Config?)
+	 * Express request handler. Updates an existing link. (Todo: should only update config)
+	 *
+	 * @route		{PUT}	/links/:id
 	 *
 	 * @async
 	 * 
 	 * @param  		{Object} 			req					Express request object
-	 * @param  		{Object} 			req.params.id		TODO: Endpoint data
-	 * @param  		{Object} 			req.body.source		TODO: Endpoint data
-	 * @param  		{Object} 			req.body.target		TODO: Endpoint data
+	 * @param  		{Object} 			req.params			Request paramters
+	 * @param  		{Object} 			req.params.id		
+	 * @param  		{Object} 			req.body			Request body
+	 * @param  		{EndpointData} 		req.body.source		Sourcet data
+	 * @param  		{EndpointData} 		req.body.target		Target data
 	 * @param  		{Object} 			res					Express result object
 	 * 
-	 * @return 		{undefined}
+	 * @return 		undefined
 	 * 
  	 * @emits		link-updated
  	 * 
