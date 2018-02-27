@@ -1,4 +1,4 @@
-#docloop
+# docloop
 
 docloop turns feedback into tasks, <br/>
 converting online annotations of a document into issues in the author's bug tracking system.
@@ -15,14 +15,14 @@ Check the example app at https://app.docloop.net
 
 The core module and the two adapters are documented here: [documenation](https://https://docloop.github.io/docs)
 
-##Requirements
+## Requirements
 
 docloop is built using node and published using npm.
 To install it you need [Node.JS](https://nodejs.org).
 To actually run it you will also need a [MongoDB](https://www.mongodb.com/) to connect to.
 
 
-##Quick start
+## Quick start
 
 First of all get the core module:
 
@@ -31,37 +31,34 @@ First of all get the core module:
 Setup up a MongoDB and use its credentials in the following minimal example:
 
 ```javascript
-	var docloop 			= 	require("docloop"),
-		DocloopCore 		= 	docloop.DocloopCore,
-		DocloopAdapter		=	docloop.DocloopAdapter,
-		DocloopEndpoint		=	docloop.DocloopEndpoint
+var docloop 			=	require("docloop"),
+	DocloopCore 		=	docloop.DocloopCore,
+	DocloopAdapter	=	docloop.DocloopAdapter,
+	DocloopEndpoint	=	docloop.DocloopEndpoint
 
-	var docloopCore = 	new	DocloopCore({
-							port:			7777,
-							sessionSecret:	'abc',
-							db:{
-								name:		"your_db_name",
-								port:		27010, 			//or wherever your db is running
-								user:		"your_db_user",	//if authentication is required
-								pass:		"your_db_pass",	//if authentication is required
-								address:	"127.0.0.1" 	//or wherever your db is running
-							}
-						})
+var docloopCore = new	DocloopCore({
+										port:			7777,
+										sessionSecret:	'abc',
+										db:{
+											name:		"your_db_name",
+											port:		27010, 			//or wherever your db is running
+											user:		"your_db_user",	//if authentication is required
+											pass:		"your_db_pass",	//if authentication is required
+											address:	"127.0.0.1" 	//or wherever your db is running
+										}
+									})
 
-
-
-
-	docloopCore
-	.use(DocloopAdapter,{
-		id:				'custom-source-adapter',
-		type:			'source',
-		endpointClass:	DocloopEndpoint,
-	})
-	.use(DocloopAdapter,{
-		id:				'custom-target-adapter',
-		type:			'target',
-		endpointClass:	DocloopEndpoint,
-	})
+docloopCore
+.use(DocloopAdapter,{
+	id:				'custom-source-adapter',
+	type:			'source',
+	endpointClass:	DocloopEndpoint,
+})
+.use(DocloopAdapter,{
+	id:				'custom-target-adapter',
+	type:			'target',
+	endpointClass:	DocloopEndpoint,
+})
 	.run()
 ```
 
