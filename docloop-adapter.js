@@ -18,7 +18,10 @@ var	EventEmitter 		= 	require('events'),
  * If you come across the real express session object you can access the adapter's reserved session part by calling {@link DocloopAdapter#getSessionData}.
  * The core and the base classes for adapters, links and endpoints use wrappers for some of the member methods to replace the original express session object with 
  * the adapters SessionData, in order to separate the data each adapter has access to. Wrapped methods are prefixed with an underscore _.
- * @typedef {SessionData}
+ * 
+ * @typedef 	{Object}	SessionData
+ * @memberof 	DocloopAdapter
+ * @alias 		SessionData
  */
 
 
@@ -32,20 +35,21 @@ var	EventEmitter 		= 	require('events'),
  *
  * Tutorial: {@tutorial custom_adapters}
  *
+ * @alias 		DocloopAdapter
  * 
  * @memberof 	module:docloop
  * @extends		EventEmitter
  * 
- * @param 		{DocloopCore} 		core 									An instance of the docloop core. 
+ * @param 		{DocloopCore} 		core 											An instance of the docloop core. 
  * @param		{Object}			config
- * @param		{String}			config.id								The id this adapter should be identified by (e.g. 'github').	
- * @param		{String}			[config.extraId]						This maybe useful if a custom adapter has a fixed id, but is supposed to be instantiated twice with different configs.
- * @param		{String}			[config.name='DocloopAdapter']			A pretty name for the Adapter, that can actually be used in a client.
- * @param		{String}			config.type								Either 'source' or 'target'.
- * @param		{DocloopEndpoint}	[config.endPointClass=DocloopEndpoint]	Endpoint class or any class extending Endpoint.
- * @param		{boolean}			[config.extraEndpoints=false]			True iff there are valid endpoints that are not returned by .getEndpoints()
- * @param		{Object}			[config.endpointDefaultConfig = {}]		Configuration object with default values for endpoints. These values will be used if no other values are provided when a new enpoint is created.
- * @param		{boolean}			config.extraEndpoints					true iff there are valid endpoints that are not returned by .getEndpoints()
+ * @param		{String}			config.id										The id this adapter should be identified by (e.g. 'github').	
+ * @param		{String}			[config.extraId]								This maybe useful if a custom adapter has a fixed id, but is supposed to be instantiated twice with different configs.
+ * @param		{String}			[config.name='DocloopAdapter']					A pretty name for the Adapter, that can actually be used in a client.
+ * @param		{String}			config.type										Either 'source' or 'target'.
+ * @param		{EndpointClass}		[config.endPointClass={@link DocloopEndpoint}]	Endpoint class or any class extending Endpoint.
+ * @param		{boolean}			[config.extraEndpoints=false]					True iff there are valid endpoints that are not returned by .getEndpoints()
+ * @param		{Object}			[config.endpointDefaultConfig = {}]				Configuration object with default values for endpoints. These values will be used if no other values are provided when a new enpoint is created.
+ * @param		{boolean}			config.extraEndpoints							true iff there are valid endpoints that are not returned by .getEndpoints()
  * 
  * @property 	{DocloopCore} 		core 
  * @property 	{String} 			id 
@@ -149,7 +153,7 @@ class DocloopAdapter extends EventEmitter {
 	 * 
 	 * @param  {Session}			session		Express session
 	 * 
-	 * @return {Object}							Adapter's session data
+	 * @return {SessionData}					Adapter's session data
 	 */
 	_getSessionData(session){
 		if(session === undefined)					throw new ReferenceError("DocloopAdapter._getSessionData() missing session")
@@ -166,7 +170,7 @@ class DocloopAdapter extends EventEmitter {
 	 * 
 	 * @param  {Session}				session		Express session
 	 * 
-	 * @return {Object}							Empty session data
+	 * @return {SessionData}						Empty session data
 	 */
 	_clearSessionData(session){
 		if(session === undefined)					throw new ReferenceError("DocloopAdapter._getSessionData() missing session")
@@ -234,7 +238,7 @@ class DocloopAdapter extends EventEmitter {
 	 * 
 	 * @param  {Session}				session		Express session
 	 * 
-	 * @return {Object}
+	 * @return {AuthState}
 	 */
 	async _getAuthState(session){
 		return await this.getAuthState(this._getSessionData(session))
@@ -247,7 +251,8 @@ class DocloopAdapter extends EventEmitter {
 	 * Data concerning an adapter meant for client use. 
 	 * 
 	 * @typedef 	{Object}			AdapterData
-	 * @memberof	module:docloop.DocloopAdapter
+	 * @memberof	DocloopAdapter
+	 * @alias		AdapterData
 	 * 
 	 * @property 	{String} 			id 						The adapter's id
 	 * @property 	{String}			name 					The adapter's name
@@ -357,7 +362,6 @@ class DocloopAdapter extends EventEmitter {
 	 * @async
 	 * 
 	 * @param  	{String | bson}				id			Mongo-db id
-	 * @param 	{Object} 					session 	Express session
 	 * 
 	 * @throws 	{DocloopError} 							If the endpoint cannot be found.
 	 * @throws 	{DocloopError} 							If the endpoint cannot be validated for the session.
@@ -395,7 +399,7 @@ class DocloopAdapter extends EventEmitter {
 	 * 
 	 * @abstract
 	 * 
-	 * @param  {Object}					session_data	Data of the current session associated with this adapter 				
+	 * @param  {SessionData}					session_data	Data of the current session associated with this adapter 				
 	 * 
 	 * @return {ValidEndpoint[]}		
 	 */
@@ -410,6 +414,7 @@ class DocloopAdapter extends EventEmitter {
 	 * @async
 	 * 
 	 * @abstract
+	 * @param  {SessionData}					session_data	Data of the current session associated with this adapter 				
 	 * 
 	 * @return {ValidEndpoint[]}
 	 */
@@ -421,6 +426,8 @@ class DocloopAdapter extends EventEmitter {
 	/**
 	 * Authorization data for client use. A truthy user value indicated that the session user is logged in with a third party service.
 	 * @typedef 	{Object} 	AuthState
+	 * @memberof	DocloopAdapter
+	 * @alias		AuthState
 	 * 
 	 * @property	{String} 	[user=null]			The username, login or id of the service the adapter makes use of
 	 * @property 	{String} 	[link=null]			Authorization Url. This is the url the client is supposed to open in order to login with the service this adapters want to make use of. Make sure to also add a route to the adapters sub app in order to catch the callback or webhook or wahever your service calls after the authorization.
@@ -434,7 +441,7 @@ class DocloopAdapter extends EventEmitter {
 	 * 
 	 * @abstract
 	 * 
-	 * @param  {Object}					session_data	Data of the current session associated with this adapter 									
+	 * @param  {SessionData}					session_data	Data of the current session associated with this adapter 									
 	 * 
 	 * @return {AuthState}
 	 */
@@ -451,17 +458,19 @@ module.exports = DocloopAdapter
 
 
 /**
- * Either {@link module:docloop.DocloopAdapter DocloopAdapter} or any Class extending it. 
+ * Either {@link DocloopAdapter} or any Class extending it. 
  * 
  * @typedef {Class} AdapterClass
- * @memberof	module:docloop.DocloopAdapter
+ * @memberof	DocloopAdapter
+ * @alias AdapterClass
  */
 
 /**
- * An instance of either {@link module:docloop.DocloopAdapter DocloopAdapter} or any Class extending it. 
+ * An instance of either {@link DocloopAdapter} or any Class extending it. 
  * 
  * @typedef {Object} Adapter
- * @memberof	module:docloop.DocloopAdapter
+ * @memberof	DocloopAdapter
+ * @alias Adapter
  */
 
 
@@ -470,9 +479,8 @@ module.exports = DocloopAdapter
  * TODO
  * 
  * @typedef Annotation
- *
- * @memberof	module:docloop.DocloopAdapter
- * 
+ * @memberof	DocloopAdapter
+ * @alias		Annotation 
  */
 
 
@@ -480,8 +488,7 @@ module.exports = DocloopAdapter
  * TODO
  * 
  * @event annotation
- *
- * @memberof 	module:docloop.DocloopAdapter
+ * @memberof 	DocloopAdapter
  *
  * @type	{Annotation}
  */

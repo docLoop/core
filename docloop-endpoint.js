@@ -9,14 +9,16 @@ const	DocloopAdapter	=	require('./docloop-adapter.js'),
 /**
  * An endpoint class is either {@link module:docloop.DocloopEndpoint DocloopEndpoint} or any class extending it.
  * @typedef		{Class} EndpointClass
- * @memberof	module:docloop.DocloopEndpoint
+ * @alias		EndpointClass
+ * @memberof	DocloopEndpoint
  */
 
 
 /**
  * An endpoint is an instance of either {@link module:docloop.DocloopEndpoint DocloopEndpoint} or any class extending it.
  * @typedef	{Object} Endpoint
- * @memberof	module:docloop.DocloopEndpoint
+ * @alias 		Endpoint
+ * @memberof	DocloopEndpoint
  */
 
 
@@ -24,7 +26,8 @@ const	DocloopAdapter	=	require('./docloop-adapter.js'),
  * A valid endpoint is an endpoint that passes .validate() for the current session.
  * Iff an endpoint is considered valid for a session, all links associated with this endpoint can be modified during this session.
  * @typedef 	{Endpoint} ValidEndpoint
- * @memberof	module:docloop.DocloopEndpoint
+ * @alias		ValidEndpoint
+ * @memberof	DocloopEndpoint
  */
 
 
@@ -45,36 +48,33 @@ const	DocloopAdapter	=	require('./docloop-adapter.js'),
  * Two Endpoints can have euqal identifiers, if for example they are part of two different Links.
  * 
  * @typedef 	{Object} Identifier
+ * @memberof	DocloopEndpoint
+ * @alias		Identifier
+ * 
  * @property 	{string} adapter		An adapter id.
  * @property 	{...*}					Any other properties.
  */
 
 /**
- * A Decoration object stores all the data the client need in order to visualize the resource pointed to by an identfier.
+ * A Decoration object stores all the data the client needs in order to nicely display the resource pointed to by an identfier.
  * 
  * @typedef 	{Object} Decoration	
+ * @memberof	DocloopEndpoint
+ * @alias		Decoration
  * 
  * @property	{String} [image=null] 					Url of an image
  * @property 	{String} [title='Generic Endpoint']		Title of the resource, the identifier points to
  * @property	{String} [details='unknown']			Additonal information concerning the resource, the identfier points to
  */
 
-/**
- *
- * @typedef {Object} EndpointData
- *
- * @property	{String|bson}		[id]				The endpoint id.
- * @property	{String|bson}		[_id]				If id is not present _id will be used. This is handy, if the data comes directly form te database.
- * @property 	{Identifier} 		 identifier			Uniquely identifies an external resource
- * @property 	{config} 			[config]			Configuration data
- * @property	{Decoration}		[decor]				Extra data for the client for visualization
- */
+
 
 
 /**
  * This is the base class for all endpoints, sources and targets alike. Any source or target should extend DocloopEndpoint.
  * 
  * @memberof 	module:docloop
+ * @alias		DocloopEndpoint
  *
  * @param 		{DocloopAdapter} 	 adapter 		
  * @param 		{EndpointData} 		 data 				Set the corresponding proprties on the endpoint object.
@@ -123,8 +123,8 @@ class DocloopEndpoint {
 	 * @static
 	 * @async
 	 * @abstract
-	 * @param  	{string}				str				A string from which to guess the Endpoint identifier
-	 * @param  	{Object}				session_data	Data of the current session associated with this adapter
+	 * @param  	{string}				str				A string to guess the Endpoint identifier from
+	 * @param  	{SessionData}			session_data	Data of the current session associated with this adapter
 	 * @return 	{ValidEndpoint}
 	 *
 	 * @throw	{DocloopError}							If no valid endpoint can be guessed.
@@ -133,19 +133,21 @@ class DocloopEndpoint {
 		throw new DocloopError("Endpoint.guess() not implemented for this endpoint class: "+ this.toString().match(/class\s([^\s]*)/)[1])
 	}
 
+	/**
+	 * Minimal data to instantiate a new {@link Endpoint}. Also: all the data the client might need.
+	 * 
+	 * @typedef 	{Object} EndpointData
+	 * @memberof	DocloopEndpoint
+	 * @alias		EndpointData
+	 * 
+	 * @property	{String|bson}		[id]				The endpoint id.
+	 * @property	{String|bson}		[_id]				If id is not present _id will be used. This is handy, if the data comes directly form the database.
+	 * @property 	{Identifier} 		 identifier			Uniquely identifies an external resource
+	 * @property 	{config} 			[config]			Configuration data
+	 * @property	{Decoration}		[decor]				Extra data for the client for visualization
+	 */
+	 
 	
-	 //Getter. Extracts raw data from the endpoint. (The same data will be used to save the endpoint to the database.)
-	
-	 /**
-	  * Minimal data to instantiate a new {@link Endpoint}. Also: all the data the client might need.
-	  *
-	  * @typedef 	{Object}		 EndpointData
-	  *
-	  * @property	{Identifier}	 export.identifier
-	  * @property	{Object}		[export.config]
-	  * @property	{Decoration}	[export.decor]
-	  */
-
 	get export(){
 		return 	{
 					identifier: this.identifier,
@@ -158,12 +160,15 @@ class DocloopEndpoint {
 	 * The skeleton of an endpoint is a minimal set of data to identify an endpoint. 
 	 * Since adapters store endpoint data individually, the endpoint id alone is not enough.
 	 * 
-	 * @typedef 	{Object}	EndpointSkeleton
+	 * @typedef 	{Object}		EndpointSkeleton
+	 * @memberof	DocloopEndpoint
+	 * @alias		EndpointSkeleton
 	 * 
 	 * @property 	{bson} 		id 			Endpoint id
 	 * @property 	{String}	adapter		Adapter id
 	 */
 
+	
 	get skeleton(){
 		return {
 			id:			this.id,
@@ -172,7 +177,7 @@ class DocloopEndpoint {
 	}
 
 	/**
-	 * Stores the endpoint to the database as new document. (Using the data from .export())
+	 * Stores the endpoint to the database as new document. (Using the data from .export)
 	 * @async
 	 * @return {bson}	The mongo-db id for the inserted document.
 	 */
@@ -216,7 +221,7 @@ class DocloopEndpoint {
 	 * @param {String}					key		A key to store the data at.
 	 * @param {Object|String|Number}	data 	The data to be stored at the key.
 	 * 
-	 * @returns {undefined} 	
+	 * @returns undefined
 	 */
 	async setData(key, data){
 		if(key 	=== undefined)			throw new ReferenceError("Endpoint.setData() missing key.")	
@@ -339,7 +344,7 @@ class DocloopEndpoint {
 	 * 
 	 * @param  {Identifier|DocloopEndpoint}		endpoint_or_identifier	And identifier or any instance of DocloopEndpoint or a class that extends DocloopEndpoint. 
 	 * 
-	 * @return {boolean}												True if endpoint_or_identifier and the current endpoint point to the same external resource.
+	 * @return {boolean}												True iff endpoint_or_identifier and the current endpoint point have the same external resource.
 	 */
 	match(endpoint_or_identifier){
 		var test_identifier = 	endpoint_or_identifier && endpoint_or_identifier.identifier || endpoint_or_identifier

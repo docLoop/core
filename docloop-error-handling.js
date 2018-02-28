@@ -4,8 +4,9 @@
  * Custom error. Since most http requests will be handled by the docloop core or one of the base classes, 
  * it is difficult for adapters to set the status code themselves. 
  * This error class lets them make a proposal for the error code, for when the error at hand eventually causes a request to fail.
- * 
- * @memberof module:docloop
+ *
+ * @alias		DocloopError
+ * @memberof 	module:docloop
  * 
  * @param {String} message 	Error description
  * @param {Number} status	Proposed HTML status code in case this error causes a request to fail.

@@ -8,7 +8,7 @@ var		EventEmitter 	= 	require('events'),
  * Class representing a queued event.
  * Instances of this class will be created by an {@link module:docloop.EventQueue EventQueue}.
  *
- * @memberof	module:docloop.EventQueue
+ * @memberof	EventQueue
  * 
  * @inner
  * 

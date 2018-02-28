@@ -14,9 +14,13 @@ var 	ObjectId 		= 	require('mongodb').ObjectID,
 
 
 /**
+ * Class representing a link between a source and a target.
+ * 
+ * @alias DocloopLink
+ * 
  * @memberof  	module:docloop
  *
- * @param		{DocloopCore}		 core						The core system. Since Core is a Factory for Links, this param will usually be set automatically.
+ * @param		{DocloopCore}		 core						The core system. Since core is a factory for Links, this param will usually be set automatically.
  * @param		{Object}			 data
  * @param		{String|bson}		[data.id]					Link id.	
  * @param		{String|bson}		[data._id]					If data.id is not present _id will be used. This is handy, if the data comes directly form te database.
@@ -24,9 +28,11 @@ var 	ObjectId 		= 	require('mongodb').ObjectID,
  * @param		{EndpointData}		 data.target
  * 
  * @property	{bson}				 id
- * @property	{Endpoint}	 		source						An endpoint representing a source of annotations
- * @property	{Endpoint}	 		target						An endpoint representing a target resource for issues
- *
+ * @property	{Endpoint}	 		 source						An endpoint representing a source of annotations
+ * @property	{Endpoint}	 		 target						An endpoint representing a target resource for issues
+ * @property	{LinkData}			 export						Getter
+ * @property	{LinkSkeleton}		 skeleton					Getter
+ * 
  * @throws		{ReferenceError}								If core is missing .
  * @throws		{TypeError}										If core is not an instance of DocloopCore.
  * @throws		{ReferenceError}								If data is missing .
@@ -81,12 +87,17 @@ class DocloopLink {
 		return this
 	}
 
-
 	/**
-	 * Extracts raw data from the link.
+	 * @typedef 	{Object} 					LinkData
+	 * @alias		LinkData
 	 * 
-	 * @return {Object}
+	 * @memberof	DocloopLink
+	 * 
+	 * @property 	{bson}					[id]				Link id 
+	 * @property 	{EndpointData}			 source				Source data	
+	 * @property 	{EndpointData}			 target				Target data
 	 */
+	
 	get export(){
 		return {
 			id:		this.id,
@@ -99,18 +110,13 @@ class DocloopLink {
 	 * @typedef 	{Object} 					LinkSkeleton
 	 * @alias		LinkSkeleton
 	 * 
-	 * @memberof	module:docloop.DocloopLink
+	 * @memberof	DocloopLink
 	 * 
-	 * @property 	{bson}						id						Link id 
-	 * @property 	{EndpointSkeleton}			source					Source skeleton	
-	 * @property 	{EndpointSkeleton}			target					Target skeleton
+	 * @property 	{bson}						id				Link id 
+	 * @property 	{EndpointSkeleton}			source			Source skeleton	
+	 * @property 	{EndpointSkeleton}			target			Target skeleton
 	 */
 
-
-	/**
-	 * Extracts minimal data from the link to find it in the database
-	 * @return {Object}
-	 */
 	get skeleton(){
 		return {
 			id:		this.id || undefined,

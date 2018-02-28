@@ -2,19 +2,19 @@
 
 /**
  * @event 		link-established
- * @memberof	module:docloop.DocloopCore
+ * @memberof	DocloopCore
  * @type		{LinkSkeleton}
  */
 
 /**
  * @event 		link-removed
- * @memberof	module:docloop.DocloopCore
+ * @memberof	DocloopCore
  * @type		{LinkSkeleton}
  */
 
 /**
  * @event 		link-updated
- * @memberof	module:docloop.DocloopCore
+ * @memberof	DocloopCore
  * @type		{LinkSkeleton}
  */
 
@@ -45,7 +45,7 @@ const 	EventEmitter 	= require('events'),
 /**
  * The Docloop  core system. An instance of this class is used to setup the application and will also be passed to all adapters as core.
  *
- * All events emitted by the adapters will be enhanced and reemmited on the core. See {@link module:docloop.DocloopCore#relayEvent}.
+ * All events emitted by the adapters will be enhanced and reemmited on the core. See {@link DocloopCore#relayEvent}.
  * 
  * @memberof	module:docloop  
  *
@@ -71,9 +71,9 @@ const 	EventEmitter 	= require('events'),
  * @property	{Promise}				 ready						Resolves when this instance is fully set up
  * @property 	{String[]} 				 preventRelayEventNames		Events that should not be relayed
  * 
- * @emits		link-established
- * @emits		link-removed
- * @emits		link-updated
+ * @emits		DocloopCore.link-established
+ * @emits		DocloopCore.link-removed
+ * @emits		DocloopCore.link-updated
  *
  */
 
@@ -290,8 +290,8 @@ class DocloopCore extends EventEmitter {
 	 * 
 	 * @async
 	 * 
-	 * @param  	{DocloopAdapter} 				AdapterClass 	Any Class extending {@link DocloopAdapter}
-	 * @param  	{Object} 			config		The configuration object for th custim adapter class.
+	 * @param  	{AdapterClass} 					
+	 * @param  	{Object} 			config		The configuration object for the custom adapter class.
 	 * 
 	 * @return 	{} 								this for chaining
 	 *
@@ -332,7 +332,7 @@ class DocloopCore extends EventEmitter {
 	/**
 	 *Create new instance of {@link DocLoopLink} with this as core using the provided data.
 	 * 
-	 * @param 	{object} 		data 	Configuration data for the new DocloopLink instance.
+	 * @param 	{LinkData} 		data 	Configuration data for the new DocloopLink instance.
 	 * @return 	{DocloopLink} 			
 	 */
 	newLink(data){
@@ -680,7 +680,7 @@ class DocloopCore extends EventEmitter {
 	 * 
 	 * @return 		undefined
 	 * 
- 	 * @emits		link-established
+ 	 * @emits		DocloopCore.link-established
  	 * 
 	 * @throws		{DocloopError|400}				If source or target is missing
 	 * @throws		{*}								If either source or target wont validate. See {@link DocloopLink._validate}.
@@ -736,10 +736,11 @@ class DocloopCore extends EventEmitter {
 	 * @param  		{EndpointData} 		req.body.target		Target data
 	 * @param  		{Object} 			res					Express result object
 	 * 
+	 * 
+ 	 * @emits		DocloopCore.link-updated
+ 	 * 
 	 * @return 		undefined
 	 * 
- 	 * @emits		link-updated
- 	 * 
 	 * @throws		{DocloopError|400}						If id, source or target is missing
 	 */
 	async handlePutLinkRequest(req, res){
