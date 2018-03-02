@@ -133,11 +133,13 @@ class DocloopCore extends EventEmitter {
 						+ (this.config.db.user && this.config.db.pass ? ':' : '') 
 						+ (this.config.db.pass || '')
 						+ (this.config.db.user && '@' || '')
-						+ (this.config.db.address | "127.0.0.1")
+						+ (this.config.db.address || "127.0.0.1")
 						+ (':')
 						+ (this.config.db.port)
 						+ ('/')
 						+ (this.config.db.name)
+
+		console.log('Connecting to: ', connect_str)
 
 		this.ready 		= 	MongoClient.connect(connect_str)
 							.then( client => {
@@ -205,14 +207,6 @@ class DocloopCore extends EventEmitter {
 							this.app.get(	'/links', 			catchAsyncErrors(this.handleGetLinksRequest.bind(this)))
 							this.app.post(	'/links', 			catchAsyncErrors(this.handlePostLinkRequest.bind(this)))
 
-							/**
-							 * Calls {@link DocloopCore#handleGetLinkRequest}.
-							 * 
-							 * @name  		getSingleLink 
-							 * @memberof	DocloopCore
-							 * @route 		{GET} 		/links/:id
-							 * @routeparam	{String}	id			Link id
-							 */
 							this.app.get(	'/links/:id', 		catchAsyncErrors(this.handleGetLinkRequest.bind(this)))
 
 
@@ -324,7 +318,8 @@ class DocloopCore extends EventEmitter {
 	async run(){	
 		return this.ready
 				.then( () => {
-					console.log('docLoop running, db on port ' + this.config.db.port + ' ...')
+					console.log('docLoop running on port', this.config.port)
+					console.log('db on port ' + this.config.db.port + ' ...')
 					this.app.listen(this.config.port)
 				})
 	}

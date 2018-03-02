@@ -90,7 +90,7 @@ module.exports = {
 	 */
 	collateCalls: function(obj, method_name, force_call_after = 1000){
 
-		if(typeof obj[method_name] != 'function') throw new TypeError("Not a method '"+method_name+ "' on "+obj.toString())
+		if(typeof obj[method_name] != 'function') throw new TypeError("collateCalls(): Not a method '"+method_name+ "' on "+obj.toString())
 
 		var original_fn		= obj[method_name],
 			scheduled_runs 	= {}
@@ -143,7 +143,7 @@ module.exports = {
 	 * @return {}						undefined             	
 	 */
 	cacheCalls: function(obj, method_name, ttl = 1000){
-		if(typeof obj[method_name] != 'function') throw new TypeError("Not a method '"+method_name+ "' on "+obj.toString())
+		if(typeof obj[method_name] != 'function') throw new TypeError("cacheCalls(): Not a method '"+method_name+ "' on "+obj.toString())
 
 		var original_fn			= obj[method_name],
 			scheduled_runs 		= {}
@@ -160,6 +160,36 @@ module.exports = {
 			return scheduled_runs[str]
 		}
 
+		function restore(){
+			obj[method_name] = original_fn
+			delete obj[method_name].restore
+		}
+
+		obj[method_name] 			= requestRun
+		obj[method_name].restore 	= restore
+	},
+
+
+	/**
+	 * Todo
+	 * 
+	 */
+	limitCalls: function(obj, method_name, ttl){
+		if(typeof obj[method_name] != 'function') throw new TypeError("limitCalls(): Not a method '"+method_name+ "' on "+obj.toString())
+
+		var original_fn	= obj[method_name],
+			timeout		= undefined
+	
+
+		function requestRun(){
+
+			if(timeout) clearTimeout(timeout)
+
+			timeout = setTimeout( () => original_fn.apply(obj), ttl)
+
+		}
+
+		
 		function restore(){
 			obj[method_name] = original_fn
 			delete obj[method_name].restore

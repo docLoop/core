@@ -2,7 +2,8 @@
 
 var		EventEmitter 	= 	require('events'),
 		Promise			= 	require('bluebird'),
-		DocloopError	=	require('./docloop-error-handling.js').DocloopError
+		DocloopError	=	require('./docloop-error-handling.js').DocloopError,
+		manageCalls		=	require('./manage-calls.js')
 
 /**
  * Class representing a queued event.
@@ -238,6 +239,10 @@ class EventQueue extends EventEmitter{
 
 		this.timeout			= undefined
 
+
+
+		//TODO: document
+		manageCalls.limitCalls(this, 'process', config.spread)
 	}
 
 
@@ -288,7 +293,7 @@ class EventQueue extends EventEmitter{
 
 		return	Promise.resolve()
 				.then( ()	=> 	queued_event.store() )
-				.then( ()	=>	queued_event.attempt() )
+				.then( ()	=>	this.process() )
 				.then( ()	=>	queued_event)
 
 	}
@@ -324,6 +329,8 @@ class EventQueue extends EventEmitter{
 	 */
 	process(){
 		var now = new Date().getTime()
+
+		console.log('process()...', now)
 
 		return	Promise.map(
 					this.collection.find({}).toArray(),
