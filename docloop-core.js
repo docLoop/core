@@ -296,8 +296,10 @@ class DocloopCore extends EventEmitter {
 
 		if(AdapterClass === undefined)	throw new ReferenceError("DocloopCore.use() missing AdapterClass")
 
+		console.log('###', AdapterClass.prototype.constructor.name, AdapterClass.prototype  instanceof DocloopAdapter)
+
 		if(AdapterClass != DocloopAdapter && !(AdapterClass.prototype  instanceof DocloopAdapter) )
-										throw new TypeError("Docloop.core.use() AdapterClass must equal or extend DocloopAdapter")
+										throw new TypeError("Docloop.core.use() AdapterClass must equal to or extend DocloopAdapter")
 
 		var adapter = new AdapterClass(this, config)
 

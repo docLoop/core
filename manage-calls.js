@@ -5,6 +5,8 @@ const	Promise	= require('bluebird')
 
 module.exports = {
 
+	//TODO: Add tests for delay
+
 	/**
 	 * Replaces a method of provided object with a proxy, that will chain consecutive calls: 
 	 * So the orginal method will be called right after all previous calls have been resolved or rejected.
@@ -17,17 +19,19 @@ module.exports = {
 	 *
 	 * The orginial mthod can be restored with obj.[method_name].restore().
 	 *
+	 *
 	 * @memberof	module:docloop
 	 * 
 	 * @param  		{Object} 				obj         	Target object
 	 * @param  		{string | string[]} 	method_names	Name(s) of the method(s) whose calls should be serialized.
+	 * @param		{Number}				delay			Number of milliseconds to wait for until the next call.
 	 *
 	 * @throws 		{TypeError} 							If one of the method names does not point to a function.
 	 * 
 	 * @return 		{}										undefined          
 	 * 	 	 
 	 */
-	serializeCalls: function(obj, method_names){
+	serializeCalls: function(obj, method_names, delay){
 
 
 		var original_methods 	= {},
@@ -41,6 +45,7 @@ module.exports = {
 
 			return chain = 	chain
 							.catch( e 	=> 	console.log(e) ) /*TODO*/
+							.then( ()	=>	Promise.delay(delay || 0))
 							.then( original_methods[method_name].bind(obj, ...args) )
 		}
 

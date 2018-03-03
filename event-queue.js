@@ -252,7 +252,8 @@ class EventQueue extends EventEmitter{
 	 * @return {this} 
 	 */
 	start(){
-		clearInterval(this.timeout)
+		if(this.timeout) clearInterval(this.timeout)
+		this.process()
 		this.timeout = setInterval(this.process.bind(this), this.processInterval)
 		return this
 	}
@@ -343,8 +344,6 @@ class EventQueue extends EventEmitter{
 						due		= delta >= (delay||0),
 						failed	= queued_event.attempts > this.maxRetries	
 
-
-					if(due) console.log(queued_event.eventName, queued_event.event.annotation && queued_event.event.annotation.id)
 
 					if(failed)	return 	Promise.delay(this.spread*index)
 										.then( () => queued_event.abandon(new DocloopError("EventQueue.process() queued event exceeded maxRetries.")) )
