@@ -343,6 +343,9 @@ class EventQueue extends EventEmitter{
 						due		= delta >= (delay||0),
 						failed	= queued_event.attempts > this.maxRetries	
 
+
+					if(due) console.log(queued_event.eventName, queued_event.event.annotation && queued_event.event.annotation.id)
+
 					if(failed)	return 	Promise.delay(this.spread*index)
 										.then( () => queued_event.abandon(new DocloopError("EventQueue.process() queued event exceeded maxRetries.")) )
 										.then( () => false)
