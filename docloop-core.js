@@ -711,6 +711,7 @@ class DocloopCore extends EventEmitter {
 
 		res.status(200).send(link.export)
 		this.emit('link-established', link.skeleton)
+		
 	}
 
 

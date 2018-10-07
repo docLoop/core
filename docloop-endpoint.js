@@ -202,7 +202,7 @@ class DocloopEndpoint {
 	async update(){
 		if(this.id === undefined) 		throw new DocloopError("Endpoint.update() missing id. To update an endpoint it must have been stored first.")
 
-		var result 	= 	await this.adapter.endpoints.update(
+		var result 	= 	await this.adapter.endpoints.updateOne(
 							{_id: 	this.id},
 							{ $set: this.export}
 						)
@@ -232,7 +232,7 @@ class DocloopEndpoint {
 		if(this.id === undefined) 		throw new DocloopError("Endpoint.setData() missing id. To set data for an endpoint it must have been stored first.")
 
 
-		var result 	= 	await this.adapter.endpoints.update(
+		var result 	= 	await this.adapter.endpoints.updateOne(
 							{_id: 	this.id},
 							{ $set: {['data.'+key]: data}}
 						)
@@ -342,15 +342,18 @@ class DocloopEndpoint {
 	/**
 	 * Checks if the provided Object points to the same external Resource as the endpoint's identifier.
 	 * 
-	 * @param  {Identifier|DocloopEndpoint}		endpoint_or_identifier	And identifier or any instance of DocloopEndpoint or a class that extends DocloopEndpoint. 
+	 * @param  {Identifier|DocloopEndpoint|EndpointSkeleton}			test	And identifier or any instance of DocloopEndpoint or a class that extends DocloopEndpoint or an EndpointSkeleton. 
 	 * 
-	 * @return {boolean}												True iff endpoint_or_identifier and the current endpoint point have the same external resource.
+	 * @return {boolean}														True iff endpoint_or_identifier and the current endpoint point have the same external resource.
 	 */
-	match(endpoint_or_identifier){
-		var test_identifier = 	endpoint_or_identifier && endpoint_or_identifier.identifier || endpoint_or_identifier
+	match(test){
 
-		if(!test_identifier) throw new DocloopError('Endpoint.match() missing test identifier or endpoint')
+		var skeleton		=	(test.id && test.adapter) && test,
+			test_identifier = 	(test && test.identifier) || test
 
+		if(!skeleton && !test_identifier) throw new DocloopError('Endpoint.match() missing test identifier/endpoint/skeleton')
+
+		if(skeleton && skeleton.id == this.id && skeleton.adapter == this.adapter.id) return true
 
 		return 	[].concat(
 					Object.keys(this.identifier),
