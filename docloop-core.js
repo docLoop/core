@@ -141,7 +141,7 @@ class DocloopCore extends EventEmitter {
 
 		console.log('Connecting to: ', connect_str)
 
-		this.ready 		= 	MongoClient.connect(connect_str)
+		this.ready 		= 	MongoClient.connect(connect_str, { useNewUrlParser: true })
 							.then( client => {
 								this.db 	= client.db(this.config.db.name)
 								this.links 	= this.db.collection('links')
@@ -711,7 +711,7 @@ class DocloopCore extends EventEmitter {
 
 		res.status(200).send(link.export)
 		this.emit('link-established', link.skeleton)
-		
+
 	}
 
 
