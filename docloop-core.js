@@ -312,7 +312,7 @@ class DocloopCore extends EventEmitter {
 		this.adapters[adapter.id] = adapter
 		this.syncRelayListeners(adapter)		
 
-
+		console.log(' [okay]' )
 		return this
 	}
 
@@ -321,6 +321,7 @@ class DocloopCore extends EventEmitter {
 	 * @return {Promise}
 	 */
 	async run(){	
+		console.log('Starting core... \n\n')
 		return this.ready
 				.then( () => {
 					console.log('docLoop running on port', this.config.port)
