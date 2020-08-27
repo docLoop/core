@@ -139,14 +139,17 @@ class DocloopCore extends EventEmitter {
 						+ ('/')
 						+ (this.config.db.name)
 
+
 		console.log('Connecting to: ', connect_str)
 
 		this.ready 		= 	MongoClient.connect(connect_str, { 
-									useNewUrlParser: 	true
+									useNewUrlParser: 	true, 
+									useUnifiedTopology:	true 
 							})
 							.then( client => {
-								this.db 	= client.db(this.config.db.name)
-								this.links 	= this.db.collection('links')
+								this.client		= client
+								this.db 		= client.db(this.config.db.name)
+								this.links 		= this.db.collection('links')
 								return this.db
 							})
 
@@ -178,7 +181,7 @@ class DocloopCore extends EventEmitter {
 							this.app.use(session({
 								name:				'docloop.sid',
 								secret:				config.sessionSecret,
-								store:				new MongoStore( { db: this.db} ),
+								store:				new MongoStore({client:this.client}),//{ db: this.db} ),
 								resave:				false,
 								saveUninitialized: 	true,
 								cookie: 			{ 
