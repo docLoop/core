@@ -141,7 +141,10 @@ class DocloopCore extends EventEmitter {
 
 		console.log('Connecting to: ', connect_str)
 
-		this.ready 		= 	MongoClient.connect(connect_str, { useNewUrlParser: true })
+		this.ready 		= 	MongoClient.connect(connect_str, { 
+									useNewUrlParser: 	true, 
+									useUnifiedTopology:	true 
+							})
 							.then( client => {
 								this.db 	= client.db(this.config.db.name)
 								this.links 	= this.db.collection('links')
