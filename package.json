@@ -1,6 +1,6 @@
 {
   "name": "docloop",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Service to convert annotations on one platform into issue on another.",
   "main": "docloop.js",
   "scripts": {
